@@ -21,3 +21,7 @@ libc     = "0.2"
 log      = "0.3"
 slab     = "0.3"
 net2     = "0.2"
+
+[[test]]
+name = "test"
+path = "test/mod.rs"
