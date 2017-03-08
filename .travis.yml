@@ -51,24 +51,6 @@ matrix:
         - cargo test
       install:
 
-    # OS X
-    - os: osx
-      rust: stable
-      script:
-        # Ensure that the build works without default features
-        - cargo build --no-default-features
-        - cargo test
-      install:
-
-    # iOS
-    - os: osx
-      osx_image: xcode8.2
-      env: TARGET=x86_64-apple-ios
-      rust: stable
-      script:
-        - cargo build
-        - CARGO_TARGET_DIR=`pwd` sh ci/run-ios.sh $TARGET
-
     # Android
     - os: linux
       env: TARGET=arm-linux-androideabi
