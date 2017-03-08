@@ -1,0 +1,79 @@
+language: rust
+
+sudo: required
+
+dist: xenial
+
+install:
+  - curl https://static.rust-lang.org/rustup.sh |
+    sh -s -- --add-target=$TARGET --disable-sudo -y --prefix=`rustc --print sysroot`
+
+script:
+  - cargo build
+  - cargo build --no-default-features
+  - if [[ $TRAVIS_OS_NAME = "linux" ]]; then
+      sh ci/run-docker.sh $TARGET;
+    else
+      export CARGO_TARGET_DIR=`pwd`/target;
+      sh ci/run.sh $TARGET;
+    fi
+
+cache: cargo
+
+matrix:
+  include:
+
+    # Test compatibility
+    #
+    # 1.9.0 is the oldest supported version of Rust. This value should NOT be
+    # changed without prior discussion.
+    #
+    # This build also deploys docs
+    - os: linux
+      rust: 1.9.0
+      before_script:
+        - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
+      script:
+        # Ensure that the build works without default features
+        - cargo build --no-default-features
+        - cargo test
+        - cargo doc --no-deps
+      after_success:
+        - travis-cargo doc-upload
+      install:
+
+    # Test on latest stable
+    - os: linux
+      rust: stable
+      script:
+        # Ensure that the build works without default features
+        - cargo build --no-default-features
+        - cargo test
+      install:
+
+    # OS X
+    - os: osx
+      rust: stable
+      script:
+        # Ensure that the build works without default features
+        - cargo build --no-default-features
+        - cargo test
+      install:
+
+    # iOS
+    - os: osx
+      osx_image: xcode8.2
+      env: TARGET=x86_64-apple-ios
+      rust: stable
+      script:
+        - cargo build
+        - CARGO_TARGET_DIR=`pwd` sh ci/run-ios.sh $TARGET
+
+    # Android
+    - os: linux
+      env: TARGET=arm-linux-androideabi
+      rust: stable
+
+notifications:
+  email:
+    on_success: never
