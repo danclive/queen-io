@@ -80,7 +80,7 @@ loop {
 
 ## Feature
 
-* Bakced by epoll kqueue
+* Bakced by epoll, kqueue
 * Non-blocking TCP, UDP sockets
 * Thread safe message channel for cross thread communication
 

@@ -8,7 +8,7 @@ documentation = "https://docs.rs/soio"
 homepage      = "https://github.com/mcorce/soio"
 repository    = "https://github.com/mcorce/soio"
 readme        = "README.md"
-keywords      = ["io", "async", "non-blocking"]
+keywords      = ["io", "async", "non-blocking", "epoll", "kqueue"]
 exclude       = [
   ".gitignore",
   ".travis.yml",
