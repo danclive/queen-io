@@ -27,37 +27,55 @@ Example:
 
 ```rust
 use soio::{Events, Poll, Ready, PollOpt, Token};
-use soio::tcp::TcpStream;
+use soio::tcp::{TcpListener, TcpStream};
 
-use std::net::{TcpListener, SocketAddr};
+// Setup some tokens to allow us to identify which event is
+// for which socket.
+const SERVER: Token = Token(0);
+const CLIENT: Token = Token(1);
 
-// Bind a server socket to connect to.
-let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
+let addr = "127.0.0.1:13265".parse().unwrap();
+
+// Setup the server socket
 let server = TcpListener::bind(&addr).unwrap();
 
-// Construct a new `Poll` handle as well as the `Events` we'll store into
+// Create an poll instance
 let poll = Poll::new().unwrap();
+
+// Start listening for incoming connections
+poll.register(&server, SERVER, Ready::readable(),
+              PollOpt::edge()).unwrap();
+
+// Setup the client socket
+let sock = TcpStream::connect(&addr).unwrap();
+
+// Register the socket
+poll.register(&sock, CLIENT, Ready::readable(),
+              PollOpt::edge()).unwrap();
+
+// Create storage for events
 let mut events = Events::with_capacity(1024);
 
-// Connect the stream
-let stream = TcpStream::connect(&server.local_addr().unwrap()).unwrap();
-
-// Register the stream with `Poll`
-poll.register(&stream, Token(0), Ready::readable() | Ready::writable(), PollOpt::edge()).unwrap();
-
-// Wait for the socket to become ready. This has to happens in a loop to
-// handle spurious wakeups.
 loop {
     poll.poll(&mut events, None).unwrap();
 
-    for event in &events {
-        if event.token() == Token(0) && event.readiness().is_writable() {
-            // The socket connected (probably, it could still be a spurious
-            // wakeup)
-            return;
+    for event in events.iter() {
+        match event.token() {
+            SERVER => {
+                // Accept and drop the socket immediately, this will close
+                // the socket and notify the client of the EOF.
+                let _ = server.accept();
+            }
+            CLIENT => {
+                // The server just shuts down the socket, let's just exit
+                // from our event loop.
+                return;
+            }
+            _ => unreachable!(),
         }
     }
 }
+
 ```
 
 ## Feature

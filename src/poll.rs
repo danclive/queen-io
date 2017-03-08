@@ -89,7 +89,7 @@ use registration::ReadinessQueue;
 /// use std::net::{TcpListener, SocketAddr};
 ///
 /// // Bind a server socket to connect to.
-/// let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
+/// let addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
 /// let server = TcpListener::bind(&addr).unwrap();
 ///
 /// // Construct a new `Poll` handle as well as the `Events` we'll store into

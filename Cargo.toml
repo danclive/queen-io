@@ -1,6 +1,6 @@
 [package]
 name          = "soio"
-version       = "0.1.2"
+version       = "0.1.3"
 license       = "MIT"
 authors       = ["dangcheng <dangcheng@hotmail.com>"]
 description   = "I/O library for Rust"
