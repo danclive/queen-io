@@ -14,7 +14,7 @@
 //! Then, add this to your crate root:
 //!
 //! ```rust
-//! extern crate soio:
+//! extern crate soio;
 //! ```
 //!
 //! # Example
@@ -91,6 +91,8 @@ mod registration;
 mod token;
 pub mod channel;
 
+mod evloop;
+
 pub use iovec::IoVec;
 pub use net::{
     tcp,
@@ -119,3 +121,8 @@ pub use registration::{
 pub use token::Token;
 
 pub use sys::EventedFd;
+
+pub use evloop::{
+    EventLoop,
+    Handler,
+};
