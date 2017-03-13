@@ -14,7 +14,7 @@
 //! Then, add this to your crate root:
 //!
 //! ```rust
-//! extern crate soio:
+//! extern crate soio;
 //! ```
 //!
 //! # Example

@@ -1,5 +1,5 @@
 use std::{fmt, ops};
-/// A set of readiness events
+/// A set of readiness event kinds
 ///
 /// `Ready` is a set of operation descriptors indicating that an operation is
 /// ready to be performed. For example, `Ready::readable()` indicates that the
