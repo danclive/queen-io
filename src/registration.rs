@@ -484,6 +484,12 @@ impl SetReadiness {
     }
 }
 
+impl fmt::Debug for SetReadiness {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SetReadiness")
+    }
+}
+
 impl RegistrationInner {
     /// Get the registration's readiness.
     fn readiness(&self) -> Ready {

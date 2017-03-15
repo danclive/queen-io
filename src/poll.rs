@@ -1,5 +1,4 @@
 use std::{fmt, io, usize};
-
 use std::sync::{Mutex, Condvar};
 use std::sync::atomic::{AtomicUsize};
 use std::sync::atomic::Ordering::{Release, SeqCst};
