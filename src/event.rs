@@ -285,3 +285,10 @@ impl Event {
         self.token
     }
 }
+
+// Used internally to mutate an `Event` in place
+// Not used on all platforms and was used on kqueue
+#[allow(dead_code)]
+pub fn kind_mut(event: &mut Event) -> &mut Ready {
+    &mut event.kind
+}

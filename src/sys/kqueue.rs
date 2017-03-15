@@ -7,8 +7,7 @@ use std::time::Duration;
 
 use libc::{self, time_t};
 
-use {io, Ready, PollOpt, Token};
-use event_imp::{self as event, Event};
+use {io, event, Ready, PollOpt, Token, Event};
 use sys::cvt;
 use sys::io::set_cloexec;
 
