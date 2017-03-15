@@ -103,13 +103,6 @@ impl PollOpt {
         PollOpt(0b0100)
     }
 
-    // TODO: Figure out if this should be deprecated or not
-    #[doc(hidden)]
-    #[inline]
-    pub fn urgent() -> PollOpt {
-        PollOpt(0b1000)
-    }
-
     /// Returns true if the options include edge-triggered notifications.
     ///
     /// See [`Poll`] for more documentation on polling.
@@ -168,13 +161,6 @@ impl PollOpt {
     #[inline]
     pub fn is_oneshot(&self) -> bool {
         self.contains(PollOpt::oneshot())
-    }
-
-    // TODO: Should this be deprecated?
-    #[doc(hidden)]
-    #[inline]
-    pub fn is_urgent(&self) -> bool {
-        self.contains(PollOpt::urgent())
     }
 
     /// Returns true if `self` is a superset of `other`.

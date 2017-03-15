@@ -143,11 +143,7 @@ fn ioevent_to_epoll(interest: Ready, opts: PollOpt) -> u32 {
     let mut kind = 0;
 
     if interest.is_readable() {
-        if opts.is_urgent() {
-            kind |= EPOLLPRI;
-        } else {
-            kind |= EPOLLIN;
-        }
+        kind |= EPOLLIN;
     }
 
     if interest.is_writable() {

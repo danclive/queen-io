@@ -36,7 +36,7 @@ const READABLE: usize = 0b0001;
 const WRITABLE: usize = 0b0010;
 const ERROR: usize    = 0b0100;
 const HUP: usize      = 0b1000;
-const READY_ALL: usize = READABLE | WRITABLE | ERROR | HUP;
+//const READY_ALL: usize = READABLE | WRITABLE | ERROR | HUP;
 
 impl Ready {
     /// Returns the empty `Ready` set.
@@ -391,7 +391,7 @@ impl ops::Not for Ready {
 
     #[inline]
     fn not(self) -> Ready {
-        Ready(!self.0 & READY_ALL)
+        Ready(!self.0)
     }
 }
 
