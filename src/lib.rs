@@ -115,7 +115,6 @@ pub use poll_opt::PollOpt;
 pub use registration::{
     Registration,
     SetReadiness,
-    new_registration,
 };
 
 pub use token::Token;
