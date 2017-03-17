@@ -20,7 +20,7 @@ fn test1() {
 }
 
 #[test]
-fn test2() {
+fn set_readiness_before_register() {
     use std::thread;
 
     let poll = Poll::new().unwrap();
@@ -52,7 +52,7 @@ fn test2() {
 }
 
 #[test]
-fn test3() {
+fn registration_new() {
     //use soio::{Events, Ready, Registration, Poll, PollOpt, Token};
     use std::thread;
 
@@ -82,7 +82,7 @@ fn test3() {
 }
 
 #[test]
-fn test4() {
+fn registration_prev_new() {
     use std::thread;
 
     let poll = Poll::new().unwrap();
@@ -110,7 +110,7 @@ fn test4() {
 }
 
 #[test]
-fn test5() {
+fn stress_single_threaded_poll() {
     use std::sync::Arc;
     use std::sync::atomic::AtomicUsize;
     use std::sync::atomic::Ordering::{Acquire, Release};
@@ -184,4 +184,69 @@ fn test5() {
             assert_eq!(ready, Ready::readable());
         }
     }
+}
+
+#[test]
+fn stress_with_small_events_collection() {
+    const N: usize = 8;
+    const ITER: usize = 1000;
+
+    use std::sync::{Arc, Barrier};
+    use std::sync::atomic::AtomicBool;
+    use std::sync::atomic::Ordering::{Acquire, Release};
+    use std::thread;
+
+    let poll = Poll::new().unwrap();
+    let mut registrations = vec![];
+
+    let barrier = Arc::new(Barrier::new(N + 1));
+    let done = Arc::new(AtomicBool::new(false));
+
+    for i in 0..N {
+        let (r, set) = Registration::new();
+        poll.register(&r, Token(i), Ready::readable(), PollOpt::edge()).unwrap();
+
+        registrations.push(r);
+
+        let barrier = barrier.clone();
+        let done = done.clone();
+
+        thread::spawn(move || {
+            barrier.wait();
+
+            while !done.load(Acquire) {
+                set.set_readiness(Ready::readable()).unwrap();
+            }
+
+            set.set_readiness(Ready::readable()).unwrap();
+        });
+    }
+
+    let mut events = Events::with_capacity(4);
+
+    barrier.wait();
+
+    for  _ in 0..ITER {
+        poll.poll(&mut events, None).unwrap();
+    }
+
+    done.store(true, Release);
+
+    let mut final_ready = vec![false; N];
+
+    for _ in 0..5 {
+        poll.poll(&mut events, None).unwrap();
+
+        for event in &events {
+            final_ready[event.token().0] = true;
+        }
+
+        if final_ready.iter().all(|v| *v) {
+            return;
+        }
+
+        thread::sleep(Duration::from_millis(10))
+    }
+
+    panic!("dead lock?");
 }

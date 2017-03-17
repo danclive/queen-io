@@ -919,6 +919,22 @@ impl ReadinessQueue {
         let end_marker = self.inner.end_marker();
         let sleep_marker = self.inner.sleep_marker();
 
+        let tail = unsafe { *self.inner.tail_readiness.get() };
+
+        // If the tail is currently set to the sleep_marker, then check if the
+        // head is as well. If it is, then the queue is currently ready to
+        // sleep. If it is not, then the queue is not empty and there should be
+        // no sleeping.
+        if tail == sleep_marker {
+            return self.inner.head_readiness.load(Acquire) == sleep_marker;
+        }
+
+        // If the tail is not currently set to `end_marker`, then the queue is
+        // not empty.
+        if tail != end_marker {
+            return false;
+        }
+
         self.inner.sleep_marker.next_readiness.store(ptr::null_mut(), Relaxed);
 
         let actual = self.inner.head_readiness.compare_and_swap(
@@ -939,24 +955,6 @@ impl ReadinessQueue {
         // Update tail pointer.
         unsafe { *self.inner.tail_readiness.get() = sleep_marker; }
         true
-    }
-
-    pub fn try_remove_sleep_marker(&self) {
-        let end_marker = self.inner.end_marker();
-        let sleep_marker = self.inner.sleep_marker();
-
-        // Set the next ptr to null
-        self.inner.end_marker.next_readiness.store(ptr::null_mut(), Relaxed);
-
-        let actual = self.inner.head_readiness.compare_and_swap(
-            sleep_marker, end_marker, AcqRel);
-
-        // If the swap is successful, then the queue is still empty.
-        if actual != sleep_marker {
-            return;
-        }
-
-        unsafe { *self.inner.tail_readiness.get() = end_marker; }
     }
 }
 
