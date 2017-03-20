@@ -813,8 +813,6 @@ impl Poll {
 
     #[inline]
     fn poll2(&self, events: &mut Events, timeout: Option<Duration>) -> io::Result<usize> {
-        let mut sleep = false;
-
         // Compute the timeout value passed to the system selector. If the
         // readiness queue has pending nodes, we still want to poll the system
         // selector for new events, but we don't want to block the thread to
@@ -828,7 +826,6 @@ impl Poll {
             // inserts `sleep_marker` into the queue. This signals to any
             // threads setting readiness that the `Poll::poll` is going to
             // sleep, so the awakener should be used.
-            sleep = true;
             timeout
         } else {
             // The readiness queue is not empty, so do not block the thread.
@@ -837,18 +834,6 @@ impl Poll {
 
         // First get selector events
         let res = self.selector.select(&mut events.inner, AWAKEN, timeout);
-
-        if sleep {
-            // Cleanup the sleep marker. Removing `sleep_marker` avoids
-            // unnecessary syscalls to the awakener. It also needs to be removed
-            // from the queue before it can be inserted again.
-            //
-            // Note, that this won't *guarantee* that the sleep marker is
-            // removed. If the sleep marker cannot be removed, it is no longer
-            // at the head of the queue, which still achieves the goal of
-            // avoiding extra awakener syscalls.
-            self.readiness_queue.try_remove_sleep_marker();
-        }
 
         if try!(res) {
             // Some awakeners require reading from a FD.

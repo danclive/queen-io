@@ -254,14 +254,6 @@ const MAX_REFCOUNT: usize = (isize::MAX) as usize;
  *
  */
 
-// TODO: get rid of this, windows depends on it for now
-#[allow(dead_code)]
-pub fn new_registration(poll: &Poll, token: Token, ready: Ready, opt: PollOpt)
-        -> (Registration, SetReadiness)
-{
-    Registration::new_priv(poll, token, ready, opt)
-}
-
 impl Registration {
     /// Create and return a new `Registration` and the associated
     /// `SetReadiness`.
@@ -323,15 +315,47 @@ impl Registration {
         (registration, set_readiness)
     }
 
-    // TODO: Get rid of this (windows depends on it for now)
-    fn new_priv(poll: &Poll, token: Token, interest: Ready, opt: PollOpt)
+    /// Create and return a new `Registration` and the associated
+    /// `SetReadiness`.
+    ///
+    /// See [struct] documentation for more detail and [`Poll`]
+    /// for high level documentation on polling.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use soio::{Events, Ready, Registration, Poll, PollOpt, Token};
+    /// use std::thread;
+    ///
+    /// let poll = Poll::new().unwrap();
+    ///
+    /// let (registration, set_readiness) = Registration::new_prev(&poll, Token(123), Ready::readable() | Ready::writable(), PollOpt::edge());
+    ///
+    /// thread::spawn(move || {
+    ///     use std::time::Duration;
+    ///     thread::sleep(Duration::from_millis(500));
+    ///
+    ///     set_readiness.set_readiness(Ready::readable()).unwrap();
+    /// });
+    ///
+    /// let mut events = Events::with_capacity(256);
+    ///
+    /// loop {
+    ///     poll.poll(&mut events, None).unwrap();
+    ///
+    ///     for event in &events {
+    ///         if event.token() == Token(123) && event.readiness().is_readable() {
+    ///             return;
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// ```
+    /// [struct]: #
+    /// [`Poll`]: struct.Poll.html
+    pub fn new_prev(poll: &Poll, token: Token, interest: Ready, opt: PollOpt)
         -> (Registration, SetReadiness)
     {
-        is_send::<Registration>();
-        is_sync::<Registration>();
-        is_send::<SetReadiness>();
-        is_sync::<SetReadiness>();
-
         // Clone handle to the readiness queue, this bumps the ref count
         let queue = poll.readiness_queue.clone();
 
@@ -759,8 +783,6 @@ impl Drop for RegistrationInner {
 impl ReadinessQueue {
     /// Create a new `ReadinessQueue`.
     pub fn new() -> io::Result<ReadinessQueue> {
-        is_send::<Self>();
-        is_sync::<Self>();
 
         let end_marker = Box::new(ReadinessNode::marker());
         let sleep_marker = Box::new(ReadinessNode::marker());
@@ -897,6 +919,22 @@ impl ReadinessQueue {
         let end_marker = self.inner.end_marker();
         let sleep_marker = self.inner.sleep_marker();
 
+        let tail = unsafe { *self.inner.tail_readiness.get() };
+
+        // If the tail is currently set to the sleep_marker, then check if the
+        // head is as well. If it is, then the queue is currently ready to
+        // sleep. If it is not, then the queue is not empty and there should be
+        // no sleeping.
+        if tail == sleep_marker {
+            return self.inner.head_readiness.load(Acquire) == sleep_marker;
+        }
+
+        // If the tail is not currently set to `end_marker`, then the queue is
+        // not empty.
+        if tail != end_marker {
+            return false;
+        }
+
         self.inner.sleep_marker.next_readiness.store(ptr::null_mut(), Relaxed);
 
         let actual = self.inner.head_readiness.compare_and_swap(
@@ -917,24 +955,6 @@ impl ReadinessQueue {
         // Update tail pointer.
         unsafe { *self.inner.tail_readiness.get() = sleep_marker; }
         true
-    }
-
-    pub fn try_remove_sleep_marker(&self) {
-        let end_marker = self.inner.end_marker();
-        let sleep_marker = self.inner.sleep_marker();
-
-        // Set the next ptr to null
-        self.inner.end_marker.next_readiness.store(ptr::null_mut(), Relaxed);
-
-        let actual = self.inner.head_readiness.compare_and_swap(
-            sleep_marker, end_marker, AcqRel);
-
-        // If the swap is successful, then the queue is still empty.
-        if actual != sleep_marker {
-            return;
-        }
-
-        unsafe { *self.inner.tail_readiness.get() = end_marker; }
     }
 }
 
@@ -1323,6 +1343,3 @@ impl From<usize> for ReadinessState {
         ReadinessState(src)
     }
 }
-
-fn is_send<T: Send>() {}
-fn is_sync<T: Sync>() {}
