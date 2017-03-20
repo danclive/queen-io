@@ -74,7 +74,6 @@
 
 extern crate libc;
 extern crate net2;
-extern crate slab;
 #[macro_use]
 extern crate log;
 
