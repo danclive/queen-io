@@ -1,6 +1,5 @@
 use {io, Ready, Poll, PollOpt, Token};
 use evented::Evented;
-use io::MapNonBlock;
 use sys::eventedfd::EventedFd;
 use std::net::{self, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::os::unix::io::{RawFd, IntoRawFd, AsRawFd, FromRawFd};
@@ -33,24 +32,20 @@ impl UdpSocket {
         })
     }
 
-    pub fn send_to(&self, buf: &[u8], target: &SocketAddr)
-                   -> io::Result<Option<usize>> {
+    pub fn send_to(&self, buf: &[u8], target: &SocketAddr) -> io::Result<usize> {
         self.io.send_to(buf, target)
-            .map_non_block()
     }
 
-    pub fn recv_from(&self, buf: &mut [u8])
-                     -> io::Result<Option<(usize, SocketAddr)>> {
+    pub fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
         self.io.recv_from(buf)
-            .map_non_block()
     }
 
-    pub fn send(&self, buf: &[u8]) -> io::Result<Option<usize>> {
-        self.io.send(buf).map_non_block()
+    pub fn send(&self, buf: &[u8]) -> io::Result<usize> {
+        self.io.send(buf)
     }
 
-    pub fn recv(&self, buf: &mut [u8]) -> io::Result<Option<usize>> {
-        self.io.recv(buf).map_non_block()
+    pub fn recv(&self, buf: &mut [u8]) -> io::Result<usize> {
+        self.io.recv(buf)
     }
 
     pub fn connect(&self, addr: SocketAddr) -> io::Result<()> {
