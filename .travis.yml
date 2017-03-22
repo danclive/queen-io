@@ -26,7 +26,7 @@ matrix:
     #
     # This build also deploys docs
     - os: linux
-      rust: 1.9.0
+      rust: 1.14.0
       before_script:
         - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
       script:
@@ -48,18 +48,6 @@ matrix:
         - cargo build --no-default-features
         - cargo test
       install:
-
-    # Android
-    - os: linux
-      env: TARGET=arm-linux-androideabi
-      rust: stable
-      script:
-        - cargo build
-        - cargo build --no-default-features
-        - sh ci/run-docker.sh $TARGET;
-      install:
-        - curl https://static.rust-lang.org/rustup.sh |
-          sh -s -- --add-target=$TARGET --disable-sudo -y --prefix=`rustc --print sysroot`
 
     # FreeBED
     - os: linux
