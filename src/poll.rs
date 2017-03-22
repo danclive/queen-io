@@ -85,17 +85,17 @@ use registration::ReadinessQueue;
 /// use soio::{Events, Poll, Ready, PollOpt, Token};
 /// use soio::tcp::TcpStream;
 ///
-/// use std::net::{TcpListener, SocketAddr};
+/// use std::net::TcpListener;
 ///
 /// // Bind a server socket to connect to.
-/// let server = TcpListener::bind("127.0.0.1:13265").unwrap();
+/// let server = TcpListener::bind("127.0.0.1:12346").unwrap();
 ///
 /// // Construct a new `Poll` handle as well as the `Events` we'll store into
 /// let poll = Poll::new().unwrap();
 /// let mut events = Events::with_capacity(1024);
 ///
 /// // Connect the stream
-/// let stream = TcpStream::connect("127.0.0.1:13265").unwrap();
+/// let stream = TcpStream::connect("127.0.0.1:12346").unwrap();
 ///
 /// // Register the stream with `Poll`
 /// poll.register(&stream, Token(0), Ready::readable() | Ready::writable(), PollOpt::edge()).unwrap();
@@ -254,7 +254,7 @@ use registration::ReadinessQueue;
 /// use std::time::Duration;
 /// use std::thread;
 ///
-/// let sock = TcpStream::connect("192.30.253.112:80").unwrap();
+/// let sock = TcpStream::connect("31.220.0.199:80").unwrap();
 ///
 /// thread::sleep(Duration::from_secs(1));
 ///
@@ -446,7 +446,7 @@ impl Poll {
     /// use std::time::{Duration, Instant};
     ///
     /// let poll = Poll::new().unwrap();
-    /// let socket = TcpStream::connect("192.30.253.112:80").unwrap();
+    /// let socket = TcpStream::connect("31.220.0.199:80").unwrap();
     ///
     /// // Register the socket with `poll`
     /// poll.register(&socket, Token(0), Ready::readable() | Ready::writable(), PollOpt::edge()).unwrap();
@@ -522,7 +522,7 @@ impl Poll {
     /// use soio::tcp::TcpStream;
     ///
     /// let poll = Poll::new().unwrap();
-    /// let socket = TcpStream::connect("192.30.253.112:80").unwrap();
+    /// let socket = TcpStream::connect("31.220.0.199:80").unwrap();
     ///
     /// // Register the socket with `poll`, requesting readable
     /// poll.register(&socket, Token(0), Ready::readable(), PollOpt::edge()).unwrap();
@@ -572,7 +572,7 @@ impl Poll {
     /// use std::time::Duration;
     ///
     /// let poll = Poll::new().unwrap();
-    /// let socket = TcpStream::connect("192.30.253.112:80").unwrap();
+    /// let socket = TcpStream::connect("31.220.0.199:80").unwrap();
     ///
     /// // Register the socket with `poll`
     /// poll.register(&socket, Token(0), Ready::readable(), PollOpt::edge()).unwrap();
@@ -639,12 +639,11 @@ impl Poll {
     /// use soio::{Events, Poll, Ready, PollOpt, Token};
     /// use soio::tcp::TcpStream;
     ///
-    /// use std::net::{TcpListener, SocketAddr};
+    /// use std::net::TcpListener;
     /// use std::thread;
     ///
     /// // Bind a server socket to connect to.
-    /// let server = TcpListener::bind("127.0.0.1:13265").unwrap();
-    /// let addr = server.local_addr().unwrap().clone();
+    /// let server = TcpListener::bind("127.0.0.1:12347").unwrap();
     ///
     /// // Spawn a thread to accept the socket
     /// thread::spawn(move || {
@@ -656,7 +655,7 @@ impl Poll {
     /// let mut events = Events::with_capacity(1024);
     ///
     /// // Connect the stream
-    /// let stream = TcpStream::connect("127.0.0.1:13265").unwrap();
+    /// let stream = TcpStream::connect("127.0.0.1:12347").unwrap();
     ///
     /// // Register the stream with `Poll`
     /// poll.register(&stream, Token(0), Ready::readable() | Ready::writable(), PollOpt::edge()).unwrap();
