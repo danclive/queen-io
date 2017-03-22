@@ -89,3 +89,5 @@ loop {
 * Linux
 * OS X
 * NetBSD
+* Android
+* iOS

@@ -35,7 +35,7 @@
 /// let poll = Poll::new().unwrap();
 ///
 /// // Tcp listener
-/// let listener = TcpListener::bind("127.0.0.1:12345").unwrap();
+/// let listener = TcpListener::bind(&"127.0.0.1:0".parse().unwrap()).unwrap();
 ///
 /// // Register the listener
 /// poll.register(&listener,
@@ -51,7 +51,7 @@
 ///     // +1 here is to connect an extra socket to signal the socket to close
 ///     for _ in 0..(MAX_SOCKETS+1) {
 ///         // Connect then drop the socket
-///         let _ = TcpStream::connect("127.0.0.1:12345").unwrap();
+///         let _ = TcpStream::connect(&addr).unwrap();
 ///     }
 /// });
 ///

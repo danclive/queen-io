@@ -4,6 +4,7 @@ use std::net::{self, SocketAddr};
 use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
 
 use libc;
+use net2::TcpStreamExt;
 
 use {io, Ready, Poll, PollOpt, Token, IoVec};
 use evented::Evented;
@@ -23,8 +24,14 @@ pub struct TcpListener {
 }
 
 impl TcpStream {
-    pub fn new(stream: net::TcpStream) -> io::Result<TcpStream> {
-        //try!(stream.set_nonblocking(true));
+    pub fn connect(stream: net::TcpStream, addr: &SocketAddr) -> io::Result<TcpStream> {
+        try!(set_nonblock(stream.as_raw_fd()));
+
+        match stream.connect(addr) {
+            Ok(..) => {}
+            Err(ref e) if e.raw_os_error() == Some(libc::EINPROGRESS) => {}
+            Err(e) => return Err(e),
+        }
 
         Ok(TcpStream {
             inner: stream,
@@ -63,6 +70,14 @@ impl TcpStream {
 
     pub fn nodelay(&self) -> io::Result<bool> {
         self.inner.nodelay()
+    }
+
+    pub fn set_keepalive_ms(&self, millis: Option<u32>) -> io::Result<()> {
+        self.inner.set_keepalive_ms(millis)
+    }
+
+    pub fn keepalive_ms(&self) -> io::Result<Option<u32>> {
+        self.inner.keepalive_ms()
     }
 
     pub fn set_ttl(&self, ttl: u32) -> io::Result<()> {
@@ -161,11 +176,10 @@ impl AsRawFd for TcpStream {
 }
 
 impl TcpListener {
-    pub fn new(sock: net::TcpListener) -> io::Result<TcpListener> {
-        //try!(sock.set_nonblocking(true));
-
+    pub fn new(inner: net::TcpListener, _addr: &SocketAddr) -> io::Result<TcpListener> {
+        try!(set_nonblock(inner.as_raw_fd()));
         Ok(TcpListener {
-            inner: sock,
+            inner: inner,
         })
     }
 
