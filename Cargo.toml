@@ -1,6 +1,6 @@
 [package]
 name          = "soio"
-version       = "0.1.7"
+version       = "0.1.8"
 license       = "MIT"
 authors       = ["dangcheng <dangcheng@hotmail.com>"]
 description   = "I/O library for Rust"
@@ -19,7 +19,6 @@ exclude       = [
 [dependencies]
 libc     = "0.2"
 log      = "0.3"
-net2     = "0.2"
 
 [[test]]
 name = "test"

@@ -1,9 +1,7 @@
 //! Primitives for working with TCP
 
 use std::io::{Read, Write};
-use std::net::{self, SocketAddr};
-
-use net2::TcpBuilder;
+use std::net::{self, ToSocketAddrs, SocketAddr};
 
 use {io, sys, Ready, Poll, PollOpt, Token, IoVec};
 use evented::Evented;
@@ -27,32 +25,16 @@ impl TcpStream {
     /// Create a new TCP stream and issue a non-blocking connect to the
     /// specified address.
     ///
-    /// This convenience method is available and uses the system's default
-    /// options when creating a socket which is then connected. If fine-grained
-    /// control over the creation of the socket is desired, you can use
-    /// `net2::TcpBuilder` to configure a socket and then pass its socket to
-    /// `TcpStream::connect_stream` to transfer ownership into soio and schedule
-    /// the connect operation.
-    pub fn connect(addr: &SocketAddr) -> io::Result<TcpStream> {
-        let sock = try!(match *addr {
-            SocketAddr::V4(..) => TcpBuilder::new_v4(),
-            SocketAddr::V6(..) => TcpBuilder::new_v6(),
-        });
+    /// `addr` is an address of the remote host. Anything which implements
+    /// `ToSocketAddrs` trait can be supplied for the address; see this trait
+    /// documentation for concrete examples.
+    /// In case `ToSocketAddrs::to_socket_addrs()` returns more than one entry,
+    /// then the first valid and reachable address is used.
+    pub fn connect<A: ToSocketAddrs>(addr: A) -> io::Result<TcpStream> {
+        let stream = try!(net::TcpStream::connect(addr));
 
-        TcpStream::connect_stream(try!(sock.to_tcp_stream()), addr)
-    }
-
-    /// Creates a new `TcpStream` from the pending socket inside the given
-    /// `std::net::TcpBuilder`, connecting it to the address specified.
-    ///
-    /// This constructor allows configuring the socket before it's actually
-    /// connected, and this function will transfer ownership to the returned
-    /// `TcpStream` if successful. An unconnected `TcpStream` can be created
-    /// with the `net2::TcpBuilder` type (and also configured via that route).
-    pub fn connect_stream(stream: net::TcpStream,
-                          addr: &SocketAddr) -> io::Result<TcpStream> {
         Ok(TcpStream {
-            sys: try!(sys::TcpStream::connect(stream, addr)),
+            sys: try!(sys::TcpStream::new(stream)),
             selector_id: SelectorId::new(),
         })
     }
@@ -68,9 +50,8 @@ impl TcpStream {
     /// it should already be connected via some other means (be it manually, the
     /// net2 crate, or the standard library).
     pub fn from_stream(stream: net::TcpStream) -> io::Result<TcpStream> {
-        try!(stream.set_nonblocking(true));
         Ok(TcpStream {
-            sys: sys::TcpStream::from_stream(stream),
+            sys: try!(sys::TcpStream::new(stream)),
             selector_id: SelectorId::new(),
         })
     }
@@ -127,31 +108,6 @@ impl TcpStream {
     /// [link]: #method.set_nodelay
     pub fn nodelay(&self) -> io::Result<bool> {
         self.sys.nodelay()
-    }
-
-    /// Sets whether keepalive messages are enabled to be sent on this socket.
-    ///
-    /// This option will set the `SO_KEEPALIVE` as well as the
-    /// `TCP_KEEPALIVE` or `TCP_KEEPIDLE` option (depending on your platform).
-    ///
-    /// If `None` is specified then keepalive messages are disabled, otherwise
-    /// the number of milliseconds specified will be the time to remain idle
-    /// before sending a TCP keepalive probe.
-    ///
-    /// Some platforms specify this value in seconds, so sub-second millisecond
-    /// specifications may be omitted.
-    pub fn set_keepalive_ms(&self, keepalive: Option<u32>) -> io::Result<()> {
-        self.sys.set_keepalive_ms(keepalive)
-    }
-
-    /// Returns whether keepalive messages are enabled on this socket, and if so
-    /// the amount of milliseconds between them.
-    ///
-    /// For more information about this option, see [`set_keepalive_ms`][link].
-    ///
-    /// [link]: #method.set_keepalive_ms
-    pub fn keepalive_ms(&self) -> io::Result<Option<u32>> {
-        self.sys.keepalive_ms()
     }
 
     /// Sets the value for the `IP_TTL` option on this socket.
@@ -279,39 +235,22 @@ pub struct TcpListener {
 }
 
 impl TcpListener {
-    /// Convenience method to bind a new TCP listener to the specified address
-    /// to receive new connections.
+    /// Creates a new `TcpListener` which will be bound to the specified
+    /// address.
     ///
-    /// This function will take the following steps:
+    /// The returned listener is ready for accepting connections.
     ///
-    /// 1. Create a new TCP socket.
-    /// 2. Set the `SO_REUSEADDR` option on the socket.
-    /// 3. Bind the socket to the specified address.
-    /// 4. Call `listen` on the socket to prepare it to receive new connections.
+    /// Binding with a port number of 0 will request that the OS assigns a port
+    /// to this listener. The port allocated can be queried via the
+    /// `local_addr` method.
     ///
-    /// If fine-grained control over the binding and listening process for a
-    /// socket is desired then the `net2::TcpBuilder` methods can be used in
-    /// combination with the `TcpListener::from_listener` method to transfer
-    /// ownership into soio.
-    pub fn bind(addr: &SocketAddr) -> io::Result<TcpListener> {
-        // Create the socket
-        let sock = try!(match *addr {
-            SocketAddr::V4(..) => TcpBuilder::new_v4(),
-            SocketAddr::V6(..) => TcpBuilder::new_v6(),
-        });
+    /// The address type can be any implementor of `ToSocketAddrs` trait. See
+    /// its documentation for concrete examples.
+    pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<TcpListener> {
+        let listener = try!(net::TcpListener::bind(addr));
 
-        // Set SO_REUSEADDR, but only on Unix (mirrors what libstd does)
-        if cfg!(unix) {
-            try!(sock.reuse_address(true));
-        }
-
-        // Bind the socket
-        try!(sock.bind(addr));
-
-        // listen
-        let listener = try!(sock.listen(1024));
         Ok(TcpListener {
-            sys: try!(sys::TcpListener::new(listener, addr)),
+            sys: try!(sys::TcpListener::new(listener)),
             selector_id: SelectorId::new(),
         })
     }
@@ -325,13 +264,10 @@ impl TcpListener {
     /// loop.
     ///
     /// The address provided must be the address that the listener is bound to.
-    pub fn from_listener(listener: net::TcpListener, addr: &SocketAddr)
-                         -> io::Result<TcpListener> {
-        sys::TcpListener::new(listener, addr).map(|s| {
-            TcpListener {
-                sys: s,
-                selector_id: SelectorId::new(),
-            }
+    pub fn from_listener(listener: net::TcpListener) -> io::Result<TcpListener> {
+        Ok(TcpListener {
+            sys: try!(sys::TcpListener::new(listener)),
+            selector_id: SelectorId::new(),
         })
     }
 
