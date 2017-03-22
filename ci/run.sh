@@ -17,8 +17,8 @@ case "$TARGET" in
     # Use the 64bit emulator
     emulator64-arm @arm-21 -no-window &
     adb wait-for-device
-    adb push $TEST_FILE /data/soio-test
-    adb shell /data/soio-test 2>&1 | tee /tmp/out
+    adb push $TEST_FILE /data/mio-test
+    adb shell /data/mio-test 2>&1 | tee /tmp/out
     grep "^test result.* 0 failed" /tmp/out
     ;;
 

@@ -28,10 +28,8 @@
 //! const SERVER: Token = Token(0);
 //! const CLIENT: Token = Token(1);
 //!
-//! let addr = "127.0.0.1:13265".parse().unwrap();
-//!
 //! // Setup the server socket
-//! let server = TcpListener::bind(&addr).unwrap();
+//! let server = TcpListener::bind("127.0.0.1:13265").unwrap();
 //!
 //! // Create an poll instance
 //! let poll = Poll::new().unwrap();
@@ -41,7 +39,7 @@
 //!               PollOpt::edge()).unwrap();
 //!
 //! // Setup the client socket
-//! let sock = TcpStream::connect(&addr).unwrap();
+//! let sock = TcpStream::connect("127.0.0.1:13265").unwrap();
 //!
 //! // Register the socket
 //! poll.register(&sock, CLIENT, Ready::readable(),
@@ -73,7 +71,6 @@
 //! ```
 
 extern crate libc;
-extern crate net2;
 #[macro_use]
 extern crate log;
 

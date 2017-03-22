@@ -14,7 +14,7 @@ use evented::Evented;
 ///
 /// `EventedFd` enables registering any type with an FD with [`Poll`].
 ///
-/// While only implementations for TCP and UDP are provided, Mio supports
+/// While only implementations for TCP and UDP are provided, Soio supports
 /// registering any FD that can be registered with the underlying OS selector.
 /// `EventedFd` provides the necessary bridge.
 ///
