@@ -49,18 +49,6 @@ matrix:
         - cargo test
       install:
 
-    # Android
-    - os: linux
-      env: TARGET=arm-linux-androideabi
-      rust: stable
-      script:
-        - cargo build
-        - cargo build --no-default-features
-        - sh ci/run-docker.sh $TARGET;
-      install:
-        - curl https://static.rust-lang.org/rustup.sh |
-          sh -s -- --add-target=$TARGET --disable-sudo -y --prefix=`rustc --print sysroot`
-
     # FreeBED
     - os: linux
       env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
