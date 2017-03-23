@@ -39,10 +39,10 @@ impl EventLoop {
         self.run = false;
     }
 
-    pub fn io_event<H>(&mut self, handler: &mut H, event: Event)
+    pub fn event<H>(&mut self, handler: &mut H, event: Event)
         where H: Handler
     {
-        handler.ready(self, event.token(), event.readiness());
+        handler.event(self, event.token(), event.readiness());
     }
 
     pub fn run_once<H>(&mut self, handler: &mut H) -> io::Result<()>
@@ -52,7 +52,7 @@ impl EventLoop {
 
         for i in 0..size {
             let event = self.events.get(i).unwrap();
-            self.io_event(handler, event)
+            self.event(handler, event)
         }
 
         Ok(())
@@ -72,5 +72,5 @@ impl EventLoop {
 }
 
 pub trait Handler: Sized {
-    fn ready(&mut self, evevt_loop: &mut EventLoop, token: Token, interest: Ready);
+    fn event(&mut self, evevt_loop: &mut EventLoop, token: Token, interest: Ready);
 }
