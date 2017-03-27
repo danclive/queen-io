@@ -87,7 +87,6 @@ mod registration;
 mod token;
 pub mod channel;
 
-mod evloop;
 
 pub use iovec::IoVec;
 pub use net::{
@@ -116,8 +115,3 @@ pub use registration::{
 pub use token::Token;
 
 pub use sys::EventedFd;
-
-pub use evloop::{
-    EventLoop,
-    Handler,
-};
