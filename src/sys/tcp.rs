@@ -24,7 +24,7 @@ pub struct TcpListener {
 
 impl TcpStream {
     pub fn new(stream: net::TcpStream) -> io::Result<TcpStream> {
-        //try!(stream.set_nonblocking(true));
+        try!(stream.set_nonblocking(true));
 
         Ok(TcpStream {
             inner: stream,
@@ -162,7 +162,7 @@ impl AsRawFd for TcpStream {
 
 impl TcpListener {
     pub fn new(sock: net::TcpListener) -> io::Result<TcpListener> {
-        //try!(sock.set_nonblocking(true));
+        try!(sock.set_nonblocking(true));
 
         Ok(TcpListener {
             inner: sock,

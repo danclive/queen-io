@@ -4,9 +4,6 @@ use sys::eventedfd::EventedFd;
 use std::net::{self, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::os::unix::io::{RawFd, IntoRawFd, AsRawFd, FromRawFd};
 
-#[allow(unused_imports)] // only here for Rust 1.8
-//use net2::UdpSocketExt;
-
 #[derive(Debug)]
 pub struct UdpSocket {
     io: net::UdpSocket,
