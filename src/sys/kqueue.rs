@@ -94,6 +94,7 @@ impl Selector {
                                            ::std::ptr::null())));
             for change in changes.iter() {
                 debug_assert_eq!(change.flags & libc::EV_ERROR, libc::EV_ERROR);
+                /*
                 if change.data != 0 {
                     // there’s some error, but we want to ignore ENOENT error for EV_DELETE
                     let orig_flags = if change.filter == libc::EVFILT_READ { r } else { w };
@@ -101,6 +102,21 @@ impl Selector {
                         return Err(::std::io::Error::from_raw_os_error(change.data as i32));
                     }
                 }
+                */
+                if change.data == 0 {
+                    continue
+                }
+
+                if change.data as i32 == libc::EPIPE && change.filter == libc::EVFILT_WRITE {
+                    continue
+                }
+
+                let orig_flags = if change.filter == libc::EVFILT_READ { r } else { w };
+                if change.data as i32 == libc::ENOENT && orig_flags & libc::EV_DELETE != 0 {
+                    continue
+                }
+
+                return Err(::std::io::Error::from_raw_os_error(change.data as i32));
             }
             Ok(())
         }
