@@ -1,5 +1,6 @@
 use std::{cmp, fmt, ptr};
 use std::os::raw::c_int;
+use std::os::unix::io::AsRawFd;
 use std::os::unix::io::RawFd;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
@@ -152,6 +153,12 @@ impl fmt::Debug for Selector {
             .field("id", &self.id)
             .field("kq", &self.kq)
             .finish()
+    }
+}
+
+impl AsRawFd for Selector {
+    fn as_raw_fd(&self) -> RawFd {
+        self.kq
     }
 }
 

@@ -3,6 +3,7 @@ extern crate soio;
 pub use ports::localhost;
 
 mod custom_event;
+mod test_poll;
 
 mod ports {
     use std::net::SocketAddr;

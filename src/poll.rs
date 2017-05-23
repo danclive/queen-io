@@ -3,6 +3,8 @@ use std::sync::{Mutex, Condvar};
 use std::sync::atomic::{AtomicUsize};
 use std::sync::atomic::Ordering::{Release, SeqCst};
 use std::time::{Duration, Instant};
+use std::os::unix::io::AsRawFd;
+use std::os::unix::io::RawFd;
 
 use {sys, Token, Ready, PollOpt, Evented, Events};
 use registration::ReadinessQueue;
@@ -553,7 +555,7 @@ impl Poll {
     /// Deregister an `Evented` handle with the `Poll` instance.
     ///
     /// When an `Evented` handle is deregistered, the `Poll` instance will
-    /// no longer monitor it for readiness state changes. Unlike disabiling
+    /// no longer monitor it for readiness state changes. Unlike disabling
     /// handles with [`oneshot`], deregistering clears up any internal resources
     /// needed to track the handle.
     ///
@@ -842,6 +844,12 @@ impl Poll {
 
         // Return number of polled events
         Ok(events.len())
+    }
+}
+
+impl AsRawFd for Poll {
+    fn as_raw_fd(&self) -> RawFd {
+        self.selector.as_raw_fd()
     }
 }
 
