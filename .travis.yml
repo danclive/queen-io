@@ -1,20 +1,19 @@
+---
 language: rust
-
+dist: trusty
 sudo: required
-
-dist: xenial
-
 services: docker
-
 cache: cargo
 
 before_cache:
+  # Travis can't cache files that are not readable by "others"
   - chmod -R a+r $HOME/.cargo
 
 script:
   - cargo build
   - cargo build --no-default-features
   - cargo test
+
 
 matrix:
   include:
