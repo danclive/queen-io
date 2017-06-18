@@ -6,7 +6,7 @@ dist: xenial
 
 services: docker
 
-cache: cache
+cache: cargo
 
 before_cache:
   - chmod -R a+r $HOME/.cargo
@@ -49,7 +49,7 @@ matrix:
         - cargo test
       install:
 
-    # FreeBED
+    # FreeBSD
     - os: linux
       env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
       install:
