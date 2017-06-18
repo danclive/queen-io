@@ -1,6 +1,8 @@
 # soio
 Soio is a I/O library for Rust.
 
+Based on [carllerche/mio](https://github.com/carllerche/mio)
+
 [![crates.io](http://meritbadge.herokuapp.com/soio)](https://crates.io/crates/soio)
 [![Build Status](https://travis-ci.org/mcorce/soio.svg?branch=master)](https://travis-ci.org/mcorce/soio)
 
