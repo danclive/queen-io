@@ -46,10 +46,10 @@ impl Selector {
 
             match epoll_create1.get() {
                 Some(epoll_create1_fn) => {
-                    try!(cvt(epoll_create1_fn(libc::EPOLL_CLOEXEC)))
+                    cvt(epoll_create1_fn(libc::EPOLL_CLOEXEC))?
                 }
                 None => {
-                    let fd = try!(cvt(libc::epoll_create(1024)));
+                    let fd = cvt(libc::epoll_create(1024))?;
                     drop(set_cloexec(fd));
                     fd
                 }
@@ -78,10 +78,10 @@ impl Selector {
         // Wait for epoll events for at most timeout_ms milliseconds
         unsafe {
             evts.events.set_len(0);
-            let cnt = try!(cvt(libc::epoll_wait(self.epfd,
+            let cnt = cvt(libc::epoll_wait(self.epfd,
                                                 evts.events.as_mut_ptr(),
                                                 evts.events.capacity() as i32,
-                                                timeout_ms)));
+                                                timeout_ms))?;
             let cnt = cnt as usize;
             evts.events.set_len(cnt);
 
@@ -104,7 +104,7 @@ impl Selector {
         };
 
         unsafe {
-            try!(cvt(libc::epoll_ctl(self.epfd, libc::EPOLL_CTL_ADD, fd, &mut info)));
+            cvt(libc::epoll_ctl(self.epfd, libc::EPOLL_CTL_ADD, fd, &mut info))?;
             Ok(())
         }
     }
@@ -117,7 +117,7 @@ impl Selector {
         };
 
         unsafe {
-            try!(cvt(libc::epoll_ctl(self.epfd, libc::EPOLL_CTL_MOD, fd, &mut info)));
+            cvt(libc::epoll_ctl(self.epfd, libc::EPOLL_CTL_MOD, fd, &mut info))?;
             Ok(())
         }
     }
@@ -133,7 +133,7 @@ impl Selector {
         };
 
         unsafe {
-            try!(cvt(libc::epoll_ctl(self.epfd, libc::EPOLL_CTL_DEL, fd, &mut info)));
+            cvt(libc::epoll_ctl(self.epfd, libc::EPOLL_CTL_DEL, fd, &mut info))?;
             Ok(())
         }
     }

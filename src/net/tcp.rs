@@ -31,10 +31,10 @@ impl TcpStream {
     /// In case `ToSocketAddrs::to_socket_addrs()` returns more than one entry,
     /// then the first valid and reachable address is used.
     pub fn connect<A: ToSocketAddrs>(addr: A) -> io::Result<TcpStream> {
-        let stream = try!(net::TcpStream::connect(addr));
+        let stream = net::TcpStream::connect(addr)?;
 
         Ok(TcpStream {
-            sys: try!(sys::TcpStream::new(stream)),
+            sys: sys::TcpStream::new(stream)?,
             selector_id: SelectorId::new(),
         })
     }
@@ -51,7 +51,7 @@ impl TcpStream {
     /// net2 crate, or the standard library).
     pub fn from_stream(stream: net::TcpStream) -> io::Result<TcpStream> {
         Ok(TcpStream {
-            sys: try!(sys::TcpStream::new(stream)),
+            sys: sys::TcpStream::new(stream)?,
             selector_id: SelectorId::new(),
         })
     }
@@ -208,7 +208,7 @@ impl<'a> Write for &'a TcpStream {
 impl Evented for TcpStream {
     fn register(&self, poll: &Poll, token: Token,
                 interest: Ready, opts: PollOpt) -> io::Result<()> {
-        try!(self.selector_id.associate_selector(poll));
+        self.selector_id.associate_selector(poll)?;
         self.sys.register(poll, token, interest, opts)
     }
 
@@ -247,10 +247,10 @@ impl TcpListener {
     /// The address type can be any implementor of `ToSocketAddrs` trait. See
     /// its documentation for concrete examples.
     pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<TcpListener> {
-        let listener = try!(net::TcpListener::bind(addr));
+        let listener = net::TcpListener::bind(addr)?;
 
         Ok(TcpListener {
-            sys: try!(sys::TcpListener::new(listener)),
+            sys: sys::TcpListener::new(listener)?,
             selector_id: SelectorId::new(),
         })
     }
@@ -266,7 +266,7 @@ impl TcpListener {
     /// The address provided must be the address that the listener is bound to.
     pub fn from_listener(listener: net::TcpListener) -> io::Result<TcpListener> {
         Ok(TcpListener {
-            sys: try!(sys::TcpListener::new(listener)),
+            sys: sys::TcpListener::new(listener)?,
             selector_id: SelectorId::new(),
         })
     }
@@ -361,7 +361,7 @@ impl TcpListener {
 impl Evented for TcpListener {
     fn register(&self, poll: &Poll, token: Token,
                 interest: Ready, opts: PollOpt) -> io::Result<()> {
-        try!(self.selector_id.associate_selector(poll));
+        self.selector_id.associate_selector(poll)?;
         self.sys.register(poll, token, interest, opts)
     }
 

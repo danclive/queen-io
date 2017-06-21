@@ -364,15 +364,15 @@ impl Poll {
         is_sync::<Poll>();
 
         let poll = Poll {
-            selector: try!(sys::Selector::new()),
-            readiness_queue: try!(ReadinessQueue::new()),
+            selector: sys::Selector::new()?,
+            readiness_queue: ReadinessQueue::new()?,
             lock_state: AtomicUsize::new(0),
             lock: Mutex::new(()),
             condvar: Condvar::new(),
         };
 
         // Register the notification wakeup FD with the IO poller
-        try!(poll.readiness_queue.inner.awakener.register(&poll, AWAKEN, Ready::readable(), PollOpt::edge()));
+        poll.readiness_queue.inner.awakener.register(&poll, AWAKEN, Ready::readable(), PollOpt::edge())?;
 
         Ok(poll)
     }
@@ -479,7 +479,7 @@ impl Poll {
     pub fn register<E: ?Sized>(&self, handle: &E, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()>
         where E: Evented
     {
-        try!(validate_args(token, interest));
+        validate_args(token, interest)?;
 
         /*
          * Undefined behavior:
@@ -489,7 +489,7 @@ impl Poll {
         trace!("registering with poller");
 
         // Register interests for this socket
-        try!(handle.register(self, token, interest, opts));
+        handle.register(self, token, interest, opts)?;
 
         Ok(())
     }
@@ -542,12 +542,12 @@ impl Poll {
     pub fn reregister<E: ?Sized>(&self, handle: &E, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()>
         where E: Evented
     {
-        try!(validate_args(token, interest));
+        validate_args(token, interest)?;
 
         trace!("registering with poller");
 
         // Register interests for this socket
-        try!(handle.reregister(self, token, interest, opts));
+        handle.reregister(self, token, interest, opts)?;
 
         Ok(())
     }
@@ -593,7 +593,7 @@ impl Poll {
         trace!("deregistering handle with poller");
 
         // Deregister interests for this socket
-        try!(handle.deregister(self));
+        handle.deregister(self)?;
 
         Ok(())
     }
@@ -832,9 +832,7 @@ impl Poll {
         };
 
         // First get selector events
-        let res = self.selector.select(&mut events.inner, AWAKEN, timeout);
-
-        if try!(res) {
+        if self.selector.select(&mut events.inner, AWAKEN, timeout)? {
             // Some awakeners require reading from a FD.
             self.readiness_queue.inner.awakener.cleanup();
         }

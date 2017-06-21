@@ -16,7 +16,7 @@ pub struct Awakener {
 
 impl Awakener {
     pub fn new() -> io::Result<Awakener> {
-        let (rd, wr) = try!(sys::pipe());
+        let (rd, wr) = sys::pipe()?;
 
         Ok(Awakener {
             reader: rd,

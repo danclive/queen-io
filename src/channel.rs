@@ -117,7 +117,7 @@ impl<T> Sender<T> {
         self.tx.send(t)
             .map_err(SendError::from)
             .and_then(|_| {
-                try!(self.ctl.inc());
+                self.ctl.inc()?;
                 Ok(())
             })
     }
@@ -137,7 +137,7 @@ impl<T> SyncSender<T> {
         self.tx.send(t)
             .map_err(From::from)
             .and_then(|_| {
-                try!(self.ctl.inc());
+                self.ctl.inc()?;
                 Ok(())
             })
     }
@@ -146,7 +146,7 @@ impl<T> SyncSender<T> {
         self.tx.try_send(t)
             .map_err(From::from)
             .and_then(|_| {
-                try!(self.ctl.inc());
+                self.ctl.inc()?;
                 Ok(())
             })
     }
@@ -196,7 +196,7 @@ impl SenderCtl {
         let cnt = self.inner.pending.fetch_add(1, Ordering::Acquire);
 
         if 0 == cnt {
-            try!(self.inner.set_readiness.set_readiness(Ready::readable()));
+            self.inner.set_readiness.set_readiness(Ready::readable())?;
         }
 
         Ok(())
@@ -223,7 +223,7 @@ impl ReceiverCtl {
         let first = self.inner.pending.load(Ordering::Acquire);
 
         if first == 1 {
-            try!(self.inner.set_readiness.set_readiness(Ready::empty()));
+            self.inner.set_readiness.set_readiness(Ready::empty())?;
         }
 
         // Decrement
@@ -232,7 +232,7 @@ impl ReceiverCtl {
         if first == 1 && second > 1 {
             // There are still pending messages. Since readiness was
             // previously unset, it must be reset here
-            try!(self.inner.set_readiness.set_readiness(Ready::readable()));
+            self.inner.set_readiness.set_readiness(Ready::readable())?;
         }
 
         Ok(())
@@ -241,10 +241,10 @@ impl ReceiverCtl {
 
 impl Evented for ReceiverCtl {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        try!(self.registration.register(poll, token, interest, opts));
+        self.registration.register(poll, token, interest, opts)?;
 
         if self.inner.pending.load(Ordering::Relaxed) > 0 {
-            try!(self.inner.set_readiness.set_readiness(Ready::readable()));
+            self.inner.set_readiness.set_readiness(Ready::readable())?;
         }
 
         Ok(())

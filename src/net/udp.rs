@@ -14,7 +14,7 @@ pub struct UdpSocket {
 impl UdpSocket {
     /// Creates a UDP socket from the given address.
     pub fn bind(addr: &SocketAddr) -> io::Result<UdpSocket> {
-        let socket = try!(net::UdpSocket::bind(addr));
+        let socket = net::UdpSocket::bind(addr)?;
         UdpSocket::from_socket(socket)
     }
 
@@ -30,7 +30,7 @@ impl UdpSocket {
     /// options like `reuse_address` or binding to multiple addresses.
     pub fn from_socket(socket: net::UdpSocket) -> io::Result<UdpSocket> {
         Ok(UdpSocket {
-            sys: try!(sys::UdpSocket::new(socket)),
+            sys: sys::UdpSocket::new(socket)?,
             selector_id: SelectorId::new(),
         })
     }
@@ -244,7 +244,7 @@ impl UdpSocket {
 
 impl Evented for UdpSocket {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        try!(self.selector_id.associate_selector(poll));
+        self.selector_id.associate_selector(poll)?;
         self.sys.register(poll, token, interest, opts)
     }
 

@@ -563,7 +563,7 @@ impl RegistrationInner {
         if !state.is_queued() && next.is_queued() {
             // We toggled the queued flag, making us responsible for queuing the
             // node in the MPSC readiness queue.
-            try!(self.enqueue_with_wakeup());
+            self.enqueue_with_wakeup()?;
         }
 
         Ok(())
@@ -721,7 +721,7 @@ impl RegistrationInner {
 
         if !state.is_queued() && next.is_queued() {
             // We are responsible for enqueing the node.
-            try!(enqueue_with_wakeup(queue, self));
+            enqueue_with_wakeup(queue, self)?;
         }
 
         Ok(())
@@ -797,7 +797,7 @@ impl ReadinessQueue {
 
         Ok(ReadinessQueue {
             inner: Arc::new(ReadinessQueueInner {
-                awakener: try!(sys::Awakener::new()),
+                awakener: sys::Awakener::new()?,
                 head_readiness: AtomicPtr::new(ptr),
                 tail_readiness: UnsafeCell::new(ptr),
                 end_marker: end_marker,
@@ -905,20 +905,6 @@ impl ReadinessQueue {
         }
     }
 
-    // fn wakeup(&self) -> io::Result<()> {
-    //     self.inner.awakener.wakeup()
-    // }
-
-    // /// Prepend the given node to the head of the readiness queue. This is done
-    // /// with relaxed ordering. Returns true if `Poll` needs to be woken up.
-    // fn enqueue_node_with_wakeup(&self, node: &ReadinessNode) -> io::Result<()> {
-    //     if self.inner.enqueue_node(node) {
-    //         try!(self.wakeup());
-    //     }
-
-    //     Ok(())
-    // }
-
     /// Prepare the queue for the `Poll::poll` thread to block in the system
     /// selector. This involves changing `head_readiness` to `sleep_marker`.
     /// Returns true if successfull and `poll` can block.
@@ -1004,7 +990,7 @@ impl ReadinessQueueInner {
     /// with relaxed ordering. Returns true if `Poll` needs to be woken up.
     fn enqueue_node_with_wakeup(&self, node: &ReadinessNode) -> io::Result<()> {
         if self.enqueue_node(node) {
-            try!(self.wakeup());
+            self.wakeup()?;
         }
 
        Ok(())
