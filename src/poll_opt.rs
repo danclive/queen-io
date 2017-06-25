@@ -22,6 +22,10 @@ use std::{fmt, ops};
 #[derive(Copy, PartialEq, Eq, Clone, PartialOrd, Ord)]
 pub struct PollOpt(usize);
 
+const EDGE: usize    = 0b0001;
+const LEVEL: usize   = 0b0010;
+const ONESHOT: usize = 0b0100;
+
 impl PollOpt {
     /// Return a `PollOpt` representing no set options.
     ///
@@ -60,7 +64,7 @@ impl PollOpt {
     /// [`Poll`]: struct.Poll.html
     #[inline]
     pub fn edge() -> PollOpt {
-        PollOpt(0b0001)
+        PollOpt(EDGE)
     }
 
     /// Return a `PollOpt` representing level-triggered notifications.
@@ -80,7 +84,7 @@ impl PollOpt {
     /// [`Poll`]: struct.Poll.html
     #[inline]
     pub fn level() -> PollOpt {
-        PollOpt(0b0010)
+        PollOpt(LEVEL)
     }
 
     /// Return a `PollOpt` representing oneshot notifications.
@@ -100,7 +104,7 @@ impl PollOpt {
     /// [`Poll`]: struct.Poll.html
     #[inline]
     pub fn oneshot() -> PollOpt {
-        PollOpt(0b0100)
+        PollOpt(ONESHOT)
     }
 
     /// Returns true if the options include edge-triggered notifications.

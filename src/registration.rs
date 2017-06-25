@@ -4,6 +4,7 @@ use std::{mem, ops, isize};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, AtomicPtr, AtomicBool};
 use std::sync::atomic::Ordering::{self, Acquire, Release, AcqRel, Relaxed};
+
 use {sys, Poll, Token, Ready, PollOpt, Evented, Event};
 /// Handle to a user space `Poll` registration.
 ///
@@ -252,12 +253,6 @@ enum Dequeue {
 }
 
 const MAX_REFCOUNT: usize = (isize::MAX) as usize;
-
-/*
- *
- * ===== Registration =====
- *
- */
 
 impl Registration {
     /// Create and return a new `Registration` and the associated
@@ -779,12 +774,6 @@ impl Drop for RegistrationInner {
     }
 }
 
-/*
- *
- * ===== ReadinessQueue =====
- *
- */
-
 impl ReadinessQueue {
     /// Create a new `ReadinessQueue`.
     pub fn new() -> io::Result<ReadinessQueue> {
@@ -1111,8 +1100,8 @@ impl ReadinessNode {
            token: Token,
            interest: Ready,
            opt: PollOpt,
-           ref_count: usize) -> ReadinessNode
-    {
+           ref_count: usize
+    ) -> ReadinessNode {
         ReadinessNode {
             state: AtomicState::new(interest, opt),
             // Only the first token is set, the others are initialized to 0
