@@ -1,6 +1,6 @@
 use std::{fmt, io, usize};
 use std::sync::{Mutex, Condvar};
-use std::sync::atomic::{AtomicUsize};
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::{Release, SeqCst};
 use std::time::{Duration, Instant};
 use std::os::unix::io::AsRawFd;
@@ -322,12 +322,6 @@ pub struct Poll {
 }
 
 const AWAKEN: Token = Token(usize::MAX);
-
-/*
- *
- * ===== Poll =====
- *
- */
 
 impl Poll {
     /// Return a new `Poll` handle.

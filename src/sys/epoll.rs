@@ -78,10 +78,14 @@ impl Selector {
         // Wait for epoll events for at most timeout_ms milliseconds
         unsafe {
             evts.events.set_len(0);
-            let cnt = cvt(libc::epoll_wait(self.epfd,
-                                                evts.events.as_mut_ptr(),
-                                                evts.events.capacity() as i32,
-                                                timeout_ms))?;
+
+            let cnt = cvt(libc::epoll_wait(
+                self.epfd,
+                evts.events.as_mut_ptr(),
+                evts.events.capacity() as i32,
+                timeout_ms)
+            )?;
+
             let cnt = cnt as usize;
             evts.events.set_len(cnt);
 
