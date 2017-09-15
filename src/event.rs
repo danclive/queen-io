@@ -60,10 +60,39 @@ pub struct Events {
 ///
 /// [`Events`]: struct.Events.html
 /// [`iter`]: struct.Events.html#method.iter
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Iter<'a> {
     inner: &'a Events,
     pos: usize,
+}
+
+/// Owned [`Events`] iterator.
+///
+/// This struct is created by the [`into_iter`] method on [`Events`].
+///
+/// # Examples
+///
+/// ```
+/// use soio::{Events, Poll};
+/// use std::time::Duration;
+///
+/// let mut events = Events::with_capacity(1024);
+/// let poll = Poll::new().unwrap();
+///
+/// // Register handles with `poll`
+///
+/// poll.poll(&mut events, Some(Duration::from_millis(100))).unwrap();
+///
+/// for event in events {
+///     println!("event={:?}", event);
+/// }
+/// ```
+///
+/// [`Events`]: struct.Events.html
+#[derive(Debug)]
+pub struct IntoIter {
+    inner: Events,
+    pos: usize
 }
 
 impl Events {
@@ -188,6 +217,28 @@ impl<'a> IntoIterator for &'a Events {
 }
 
 impl<'a> Iterator for Iter<'a> {
+    type Item = Event;
+
+    fn next(&mut self) -> Option<Event> {
+        let ret = self.inner.get(self.pos);
+        self.pos += 1;
+        ret
+    }
+}
+
+impl IntoIterator for Events {
+    type Item = Event;
+    type IntoIter = IntoIter;
+
+    fn into_iter(self) -> self::IntoIter {
+        IntoIter {
+            inner: self,
+            pos: 0
+        }
+    }
+}
+
+impl Iterator for IntoIter {
     type Item = Event;
 
     fn next(&mut self) -> Option<Event> {
