@@ -1,4 +1,6 @@
 use std::os::unix::io::FromRawFd;
+use std::os::unix::io::AsRawFd;
+use std::os::unix::io::RawFd;
 
 use libc;
 
@@ -42,6 +44,12 @@ impl Awakener {
             Ok(i) if i > 0 => {},
             _ => return
         }
+    }
+}
+
+impl AsRawFd for Awakener {
+    fn as_raw_fd(&self) -> RawFd {
+        self.inner.as_raw_fd()
     }
 }
 

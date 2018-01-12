@@ -1,3 +1,5 @@
+use std::os::unix::io::RawFd;
+
 use sys::io;
 use {Poll, Token, Ready, PollOpt};
 
@@ -7,4 +9,18 @@ pub trait Evented {
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()>;
 
     fn deregister(&self, poll: &Poll) -> io::Result<()>;
+}
+
+impl Evented for RawFd {
+    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+        poll.inner().register(*self, token, interest, opts)
+    }
+
+    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+        poll.inner().reregister(*self, token, interest, opts)
+    }
+
+    fn deregister(&self, poll: &Poll) -> io::Result<()> {
+        poll.inner().deregister(*self)
+    }
 }

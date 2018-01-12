@@ -1,4 +1,6 @@
 use std::sync::Arc;
+use std::os::unix::io::AsRawFd;
+use std::os::unix::io::RawFd;
 
 use sys::io;
 use sys::Awakener;
@@ -35,6 +37,12 @@ impl Registration {
 
     pub fn finish(&self) {
         self.awakener.cleanup()
+    }
+}
+
+impl AsRawFd for Registration {
+    fn as_raw_fd(&self) -> RawFd {
+        self.awakener.as_raw_fd()
     }
 }
 

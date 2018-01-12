@@ -30,7 +30,6 @@ impl Poll {
     {
         validate_args(token, interest)?;
 
-        // Register interests for this socket
         handle.register(self, token, interest, opts)?;
 
         Ok(())
@@ -41,7 +40,6 @@ impl Poll {
     {
         validate_args(token, interest)?;
 
-        // Register interests for this socket
         handle.reregister(self, token, interest, opts)?;
 
         Ok(())
@@ -50,7 +48,6 @@ impl Poll {
     pub fn deregister<E: ?Sized>(&self, handle: &E) -> io::Result<()>
         where E: Evented
     {
-        // Deregister interests for this socket
         handle.deregister(self)?;
 
         Ok(())
