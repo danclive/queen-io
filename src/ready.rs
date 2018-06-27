@@ -35,27 +35,27 @@ impl Ready {
     }
 
     #[inline]
-    pub fn is_empty(&self) -> bool {
-        *self == Ready::empty()
+    pub fn is_empty(self) -> bool {
+        self == Ready::empty()
     }
 
     #[inline]
-    pub fn is_readable(&self) -> bool {
+    pub fn is_readable(self) -> bool {
         self.contains(Ready::readable())
     }
 
     #[inline]
-    pub fn is_writable(&self) -> bool {
+    pub fn is_writable(self) -> bool {
         self.contains(Ready::writable())
     }
 
     #[inline]
-    pub fn is_error(&self) -> bool {
+    pub fn is_error(self) -> bool {
         self.contains(Ready(ERROR))
     }
 
     #[inline]
-    pub fn is_hup(&self) -> bool {
+    pub fn is_hup(self) -> bool {
         self.contains(Ready(HUP))
     }
 
@@ -70,12 +70,12 @@ impl Ready {
     }
 
     #[inline]
-    pub fn contains(&self, other: Ready) -> bool {
-        (*self & other) == other
+    pub fn contains(self, other: Ready) -> bool {
+        (self & other) == other
     }
 
     #[inline]
-    pub fn as_usize(&self) -> usize {
+    pub fn as_usize(self) -> usize {
         self.0
     }
 }

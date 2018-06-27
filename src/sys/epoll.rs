@@ -2,7 +2,7 @@ use std::os::unix::io::AsRawFd;
 use std::os::unix::io::RawFd;
 use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::time::Duration;
-use std::{cmp, i32};
+use std::{cmp, i32, u64};
 
 use libc::{self, c_int};
 use libc::{EPOLLERR, EPOLLHUP};
@@ -29,8 +29,8 @@ impl Epoll {
         let id = NEXT_ID.fetch_add(1, Ordering::Relaxed) + 1;
 
         Ok(Epoll {
-            id: id,
-            epfd: epfd
+            id,
+            epfd
         })
     }
 
@@ -54,7 +54,7 @@ impl Epoll {
             let cnt = cnt as usize;
             evts.events.set_len(cnt);
 
-            return Ok(());
+            Ok(())
         }
     }
 
@@ -200,5 +200,5 @@ const MILLIS_PER_SEC: u64 = 1_000;
 
 pub fn millis(duration: Duration) -> u64 {
     let millis = (duration.subsec_nanos() + NANOS_PER_MILLI - 1) / NANOS_PER_MILLI;
-    duration.as_secs().saturating_mul(MILLIS_PER_SEC).saturating_add(millis as u64)
+    duration.as_secs().saturating_mul(MILLIS_PER_SEC).saturating_add(u64::from(millis))
 }
