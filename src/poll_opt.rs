@@ -29,23 +29,23 @@ impl PollOpt {
     }
 
     #[inline]
-    pub fn is_edge(&self) -> bool {
+    pub fn is_edge(self) -> bool {
         self.contains(PollOpt::edge())
     }
 
     #[inline]
-    pub fn is_level(&self) -> bool {
+    pub fn is_level(self) -> bool {
         self.contains(PollOpt::level())
     }
 
     #[inline]
-    pub fn is_oneshot(&self) -> bool {
+    pub fn is_oneshot(self) -> bool {
         self.contains(PollOpt::oneshot())
     }
 
     #[inline]
-    pub fn contains(&self, other: PollOpt) -> bool {
-        (*self & other) == other
+    pub fn contains(self, other: PollOpt) -> bool {
+        (self & other) == other
     }
 
     #[inline]
@@ -58,7 +58,7 @@ impl PollOpt {
         self.0 &= !other.0;
     }
 
-    pub fn as_usize(&self) -> usize {
+    pub fn as_usize(self) -> usize {
         self.0
     }
 }

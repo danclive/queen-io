@@ -17,7 +17,7 @@ impl Registration {
         let awakener = Arc::new(Awakener::new()?);
 
         let registration = Registration {
-                awakener: awakener
+                awakener
         };
 
         Ok(registration)

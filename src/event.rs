@@ -64,7 +64,7 @@ impl Event {
     pub fn new(readiness: Ready, token: Token) -> Event {
         Event {
             kind: readiness,
-            token: token
+            token
         }
     }
 
