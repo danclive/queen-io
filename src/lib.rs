@@ -24,3 +24,4 @@ pub use net::tcp;
 
 pub use plus::channel;
 pub use plus::message_queue;
+pub use plus::timer;

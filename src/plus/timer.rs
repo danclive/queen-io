@@ -1,21 +1,51 @@
-use std::time::Duration;
-use std::collections::BinaryHeap;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::collections::{BinaryHeap, VecDeque};
 use std::cmp::Ordering;
+use std::thread;
+use std::sync::{Arc, Mutex, Condvar};
+use std::io;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+use registration::Registration;
+use Ready;
+
+#[derive(Debug, Clone, Default, Eq)]
 pub struct Timespec {
-    interval: Duration,
-    value: Duration
+    pub interval: Duration,
+    pub value: Duration
 }
 
-#[derive(Debug, Eq)]
-struct Task {
-    token: usize,
-    timespec: Timespec
+impl PartialOrd for Timespec {
+    fn partial_cmp(&self, other: &Timespec) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
-impl Ord for Task {
-    fn cmp(&self, other: &Task) -> Ordering {
+impl Ord for Timespec {
+    fn cmp(&self, other: &Timespec) -> Ordering {
+        self.value.cmp(&other.value)
+    }
+}
+
+impl PartialEq for Timespec {
+    fn eq(&self, other: &Timespec) -> bool {
+        self.value == other.value
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Task<T> {
+    pub data: T,
+    pub timespec: Timespec
+}
+
+impl<T> PartialOrd for Task<T> {
+    fn partial_cmp(&self, other: &Task<T>) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<T> Ord for Task<T> {
+    fn cmp(&self, other: &Task<T>) -> Ordering {
         match self.timespec.cmp(&other.timespec) {
             Ordering::Equal => Ordering::Equal,
             Ordering::Greater => Ordering::Less,
@@ -24,47 +54,128 @@ impl Ord for Task {
     }
 }
 
-impl PartialOrd for Task {
-    fn partial_cmp(&self, other: &Task) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for Task {
-    fn eq(&self, other: &Task) -> bool {
+impl<T> PartialEq for Task<T> {
+    fn eq(&self, other: &Task<T>) -> bool {
         self.timespec == other.timespec
     }
 }
 
-pub struct Timer {
-    tick_ms: u64,
-    tasks: BinaryHeap<Task>
+impl<T> Eq for Task<T> {}
+
+pub struct Timer<T: Clone> {
+    thread_handle: thread::JoinHandle<()>,
+    inner: Arc<TimerInner<T>>
 }
 
-impl Timer {
-    pub fn new(tick_ms: u64,) -> Timer {
+struct TimerInner<T> {
+    tasks: Mutex<BinaryHeap<Task<T>>>,
+    queue: Mutex<VecDeque<Task<T>>>,
+    registration: Registration,
+    condvar: Condvar
+}
+
+impl<T> Timer<T> where T: Clone + Send + 'static {
+    pub fn new() -> Timer<T> {
+
+        let inner = Arc::new(TimerInner {
+            tasks: Mutex::new(BinaryHeap::new()),
+            queue: Mutex::new(VecDeque::new()),
+            registration: Registration::new().unwrap(),
+            condvar: Condvar::new()
+        });
+
+        let inner2 = inner.clone();
+
+        let thread_handle = thread::Builder::new().name("timer".to_owned()).spawn(move || {
+            let inner = inner2;
+
+            loop {
+                let mut sleep_duration = Duration::from_secs(10);
+
+                loop {
+                    let mut tasks = inner.tasks.lock().unwrap();
+
+                    if let Some(ref task) = tasks.peek().map(|v| v.to_owned()) {
+                        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+
+                        if task.timespec.value > now {
+                            sleep_duration = task.timespec.value - now;
+                            println!("{:?}", sleep_duration);
+                            break;
+                        } else {
+                            if let Some(mut task) = tasks.pop() {
+                                let mut queue = inner.queue.lock().unwrap();
+                                queue.push_back(task.clone());
+
+                                if task.timespec.interval != Duration::default() {
+                                    task.timespec.value += task.timespec.interval;
+                                    tasks.push(task);
+                                }
+
+                                inner.condvar.notify_one();
+                                inner.registration.set_readiness(Ready::readable()).unwrap();
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                }
+
+                thread::park_timeout(sleep_duration);
+            }
+        }).unwrap();
+
         Timer {
-            tick_ms,
-            tasks: BinaryHeap::new()
+            thread_handle,
+            inner
         }
     }
 
-    pub fn insert(&mut self, token: usize, timespec: Timespec) {
-        
+    pub fn insert(&self, task: Task<T>) {
+        let mut tasks = self.inner.tasks.lock().unwrap();
+        tasks.push(task);
+        self.thread_handle.thread().unpark();
     }
 
-    pub fn remove(&mut self, token: usize) {
+    // pub fn remove(&mut self, token: usize) {
 
+    // }
 
-        let a = 123;
+    pub fn pop(&self) -> Task<T> {
+        let mut queue = self.inner.queue.lock().unwrap();
 
+        loop {
+            if let Some(task) = queue.pop_front() {
+                return task;
+            }
+
+            queue = self.inner.condvar.wait(queue).unwrap();
+        }
     }
 
-    pub fn pop(&mut self) -> usize {
-        0
-    }
+    pub fn try_pop(&self) -> io::Result<Option<Task<T>>> {
+        let mut queue = self.inner.queue.lock().unwrap();
 
-    pub fn try_pop(&mut self) -> Option<usize> {
-        None
+        if queue.len() <= 1 {
+            self.inner.registration.set_readiness(Ready::empty())?;
+        } else {
+            self.inner.registration.set_readiness(Ready::readable())?;
+        }
+
+        Ok(queue.pop_front())
     }
+}
+
+fn aaa() {
+    let timer: Timer<usize> = Timer::new();
+
+    let task = Task {
+        data: 123,
+        timespec: Timespec{
+            value: Duration::from_secs(1),
+            interval: Duration::from_secs(0)
+        }
+    };
+
+    timer.insert(task);
 }
