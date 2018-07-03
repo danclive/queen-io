@@ -10,7 +10,7 @@ pub struct MessagesQueue<T> where T: Send {
 }
 
 #[derive(Debug)]
-struct MessagesQueueInner<T> where T: Send {
+struct MessagesQueueInner<T> {
     queue: Mutex<VecDeque<T>>,
     condvar: Condvar,
     registration: Registration

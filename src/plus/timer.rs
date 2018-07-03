@@ -5,8 +5,7 @@ use std::thread;
 use std::sync::{Arc, Mutex, Condvar};
 use std::io;
 
-use registration::Registration;
-use Ready;
+use {Registration, Ready, Evented, Poll, Token, PollOpt};
 
 #[derive(Debug, Clone, Default, Eq)]
 pub struct Timespec {
@@ -90,7 +89,7 @@ impl<T> Timer<T> where T: Clone + Send + 'static {
             let inner = inner2;
 
             loop {
-                let mut sleep_duration = Duration::from_secs(10);
+                let mut sleep_duration = Duration::from_secs(60);
 
                 loop {
                     let mut tasks = inner.tasks.lock().unwrap();
@@ -100,7 +99,6 @@ impl<T> Timer<T> where T: Clone + Send + 'static {
 
                         if task.timespec.value > now {
                             sleep_duration = task.timespec.value - now;
-                            println!("{:?}", sleep_duration);
                             break;
                         } else {
                             if let Some(mut task) = tasks.pop() {
@@ -156,6 +154,8 @@ impl<T> Timer<T> where T: Clone + Send + 'static {
     pub fn try_pop(&self) -> io::Result<Option<Task<T>>> {
         let mut queue = self.inner.queue.lock().unwrap();
 
+        println!("{:?}", queue.len());
+
         if queue.len() <= 1 {
             self.inner.registration.set_readiness(Ready::empty())?;
         } else {
@@ -166,16 +166,23 @@ impl<T> Timer<T> where T: Clone + Send + 'static {
     }
 }
 
-fn aaa() {
-    let timer: Timer<usize> = Timer::new();
+impl<T> Evented for Timer<T> where T: Clone {
+    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+        self.inner.registration.register(poll, token, interest, opts)?;
 
-    let task = Task {
-        data: 123,
-        timespec: Timespec{
-            value: Duration::from_secs(1),
-            interval: Duration::from_secs(0)
+        let queue = self.inner.queue.lock().unwrap();
+        if queue.len() > 0 {
+            self.inner.registration.set_readiness(Ready::readable())?;
         }
-    };
 
-    timer.insert(task);
+        Ok(())
+    }
+
+    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
+        self.inner.registration.reregister(poll, token, interest, opts)
+    }
+
+    fn deregister(&self, poll: &Poll) -> io::Result<()> {
+        self.inner.registration.deregister(poll)
+    }
 }
