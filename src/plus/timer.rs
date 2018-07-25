@@ -73,7 +73,7 @@ struct TimerInner<T> {
     condvar: Condvar
 }
 
-impl<T> Timer<T> where T: Clone + Send + 'static {
+impl<T> Timer<T> where T: Clone + Send + PartialEq + 'static {
     pub fn new() -> Timer<T> {
 
         let inner = Arc::new(TimerInner {
@@ -135,9 +135,17 @@ impl<T> Timer<T> where T: Clone + Send + 'static {
         self.thread_handle.thread().unpark();
     }
 
-    // pub fn remove(&mut self, token: usize) {
+    pub fn remove(&mut self, token: T) {
+        let mut tasks = self.inner.tasks.lock().unwrap();
 
-    // }
+        let mut tasks_vec: Vec<Task<T>> = Vec::from(tasks.clone());
+
+        if let Some(pos) = tasks_vec.iter().position(|x| x.data == token) {
+            tasks_vec.remove(pos);
+        }
+
+        *tasks = tasks_vec.into();
+    }
 
     pub fn pop(&self) -> Task<T> {
         let mut queue = self.inner.queue.lock().unwrap();
