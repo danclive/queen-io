@@ -162,8 +162,6 @@ impl<T> Timer<T> where T: Clone + Send + PartialEq + 'static {
     pub fn try_pop(&self) -> io::Result<Option<Task<T>>> {
         let mut queue = self.inner.queue.lock().unwrap();
 
-        println!("{:?}", queue.len());
-
         if queue.len() <= 1 {
             self.inner.registration.set_readiness(Ready::empty())?;
         } else {
