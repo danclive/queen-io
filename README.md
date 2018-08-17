@@ -1,6 +1,6 @@
 # queen-io
 
-Queen-io is a I/O library for Rust, it originated in [carllerche/mio](https://github.com/carllerche/mio). Unlike mio, queen-io only supports Linux because it use [eventfd](http://www.man7.org/linux/man-pages/man2/eventfd.2.html) instead of pipe-- which reduces the creation of a file descriptor and is easier to create user-defined events.
+Queen-io is a I/O library for Rust, it originated in [carllerche/mio](https://github.com/carllerche/mio). Unlike mio, queen-io only supports Linux because it use [eventfd](http://www.man7.org/linux/man-pages/man2/eventfd.2.html) instead of pipe which reduces the creation of a file descriptor and is easier to create user-defined events.
 
 [![crates.io](https://meritbadge.herokuapp.com/queen-io)](https://crates.io/crates/queen-io)
 [![Build Status](https://travis-ci.org/mitum/queen-io.svg?branch=master)](https://travis-ci.org/mitum/queen-io)
