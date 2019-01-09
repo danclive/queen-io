@@ -2,8 +2,8 @@ pub mod tcp;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use sys::io;
-use Poll;
+use crate::sys::io;
+use crate::Poll;
 
 #[derive(Debug)]
 struct SelectorId {

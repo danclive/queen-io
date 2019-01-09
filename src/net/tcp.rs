@@ -3,8 +3,8 @@ use std::time::Duration;
 use std::net::{self, ToSocketAddrs, SocketAddr};
 use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
 
-use sys::io::{self, set_nonblock};
-use {Poll, Token, Ready, PollOpt, Evented};
+use crate::sys::io::{self, set_nonblock};
+use crate::{Poll, Token, Ready, PollOpt, Evented};
 use super::SelectorId;
 
 #[derive(Debug)]

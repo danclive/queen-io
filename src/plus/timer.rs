@@ -5,7 +5,7 @@ use std::thread;
 use std::sync::{Arc, Mutex, Condvar};
 use std::io;
 
-use {Registration, Ready, Evented, Poll, Token, PollOpt};
+use crate::{Awakener, Ready, Evented, Poll, Token, PollOpt};
 
 #[derive(Debug, Clone, Default, Eq)]
 pub struct Timespec {
@@ -69,7 +69,7 @@ pub struct Timer<T: Clone> {
 struct TimerInner<T> {
     tasks: Mutex<BinaryHeap<Task<T>>>,
     queue: Mutex<VecDeque<Task<T>>>,
-    registration: Registration,
+    awakener: Awakener,
     condvar: Condvar
 }
 
@@ -79,7 +79,7 @@ impl<T> Timer<T> where T: Clone + Send + PartialEq + 'static {
         let inner = Arc::new(TimerInner {
             tasks: Mutex::new(BinaryHeap::new()),
             queue: Mutex::new(VecDeque::new()),
-            registration: Registration::new().unwrap(),
+            awakener: Awakener::new().unwrap(),
             condvar: Condvar::new()
         });
 
@@ -111,7 +111,7 @@ impl<T> Timer<T> where T: Clone + Send + PartialEq + 'static {
                                 }
 
                                 inner.condvar.notify_one();
-                                inner.registration.set_readiness(Ready::readable()).unwrap();
+                                inner.awakener.set_readiness(Ready::readable()).unwrap();
                             }
                         }
                     } else {
@@ -163,9 +163,9 @@ impl<T> Timer<T> where T: Clone + Send + PartialEq + 'static {
         let mut queue = self.inner.queue.lock().unwrap();
 
         if queue.len() <= 1 {
-            self.inner.registration.set_readiness(Ready::empty())?;
+            self.inner.awakener.set_readiness(Ready::empty())?;
         } else {
-            self.inner.registration.set_readiness(Ready::readable())?;
+            self.inner.awakener.set_readiness(Ready::readable())?;
         }
 
         Ok(queue.pop_front())
@@ -174,21 +174,21 @@ impl<T> Timer<T> where T: Clone + Send + PartialEq + 'static {
 
 impl<T> Evented for Timer<T> where T: Clone {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.registration.register(poll, token, interest, opts)?;
+        self.inner.awakener.register(poll, token, interest, opts)?;
 
         let queue = self.inner.queue.lock().unwrap();
         if queue.len() > 0 {
-            self.inner.registration.set_readiness(Ready::readable())?;
+            self.inner.awakener.set_readiness(Ready::readable())?;
         }
 
         Ok(())
     }
 
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.registration.reregister(poll, token, interest, opts)
+        self.inner.awakener.reregister(poll, token, interest, opts)
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.inner.registration.deregister(poll)
+        self.inner.awakener.deregister(poll)
     }
 }

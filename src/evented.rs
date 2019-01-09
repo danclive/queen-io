@@ -1,7 +1,7 @@
 use std::os::unix::io::RawFd;
 
-use sys::io;
-use {Poll, Token, Ready, PollOpt};
+use crate::sys::io;
+use crate::{Poll, Token, Ready, PollOpt};
 
 pub trait Evented {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()>;

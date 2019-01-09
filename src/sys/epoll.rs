@@ -9,9 +9,9 @@ use libc::{EPOLLERR, EPOLLHUP};
 use libc::{EPOLLET, EPOLLOUT, EPOLLIN, EPOLLPRI};
 use libc::{EPOLLRDHUP, EPOLLONESHOT};
 
-use sys::{io, cvt};
+use crate::sys::{io, cvt};
 
-use {Token, Ready, PollOpt, Event};
+use crate::{Token, Ready, PollOpt, Event};
 
 static NEXT_ID: AtomicUsize = ATOMIC_USIZE_INIT;
 
@@ -38,7 +38,7 @@ impl Epoll {
         self.id
     }
 
-    pub fn select(&self, evts: &mut Events, timeout: Option<Duration>) -> io::Result<()> {
+    pub fn wait(&self, evts: &mut Events, timeout: Option<Duration>) -> io::Result<()> {
         let timeout_ms = timeout
             .map(|to| cmp::min(millis(to), i32::MAX as u64) as i32)
             .unwrap_or(-1);

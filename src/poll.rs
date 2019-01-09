@@ -3,8 +3,8 @@ use std::fmt;
 use std::os::unix::io::AsRawFd;
 use std::os::unix::io::RawFd;
 
-use sys::{self, io};
-use {Token, Ready, PollOpt, Events, Evented};
+use crate::sys::{self, io};
+use crate::{Token, Ready, PollOpt, Events, Evented};
 
 pub struct Poll {
     epoll: sys::Epoll
@@ -20,8 +20,8 @@ impl Poll {
         })
     }
 
-    pub fn poll(&self, events: &mut Events, timeout: Option<Duration>) -> io::Result<usize> {
-        self.epoll.select(&mut events.inner, timeout)?;
+    pub fn wait(&self, events: &mut Events, timeout: Option<Duration>) -> io::Result<usize> {
+        self.epoll.wait(&mut events.inner, timeout)?;
         Ok(events.len())
     }
 

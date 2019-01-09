@@ -4,9 +4,9 @@ pub use std::io::{Read, Write, Result, Error, ErrorKind};
 
 use libc;
 
-use sys::cvt;
+use crate::sys::cvt;
 
-use {Poll, Token, Ready, PollOpt, Evented};
+use crate::{Poll, Token, Ready, PollOpt, Evented};
 
 pub fn set_nonblock(fd: libc::c_int) -> Result<()> {
     unsafe {
@@ -52,30 +52,30 @@ impl AsRawFd for Io {
 }
 
 impl Read for Io {
-    fn read(&mut self, dst: &mut [u8]) -> Result<usize> {
-        (&self.fd).read(dst)
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        self.fd.read(buf)
     }
 }
 
 impl<'a> Read for &'a Io {
-    fn read(&mut self, dst: &mut [u8]) -> Result<usize> {
-        (&self.fd).read(dst)
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        (&self.fd).read(buf)
     }
 }
 
 impl Write for Io {
-    fn write(&mut self, src: &[u8]) -> Result<usize> {
-        (&self.fd).write(src)
+    fn write(&mut self, buf: &[u8]) -> Result<usize> {
+        self.fd.write(buf)
     }
 
     fn flush(&mut self) -> Result<()> {
-        (&self.fd).flush()
+        self.fd.flush()
     }
 }
 
 impl<'a> Write for &'a Io {
-    fn write(&mut self, src: &[u8]) -> Result<usize> {
-        (&self.fd).write(src)
+    fn write(&mut self, buf: &[u8]) -> Result<usize> {
+        (&self.fd).write(buf)
     }
 
     fn flush(&mut self) -> Result<()> {

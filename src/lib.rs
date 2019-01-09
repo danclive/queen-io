@@ -1,5 +1,3 @@
-extern crate libc;
-
 pub mod sys;
 mod event;
 mod token;
@@ -7,21 +5,16 @@ mod ready;
 mod poll_opt;
 mod poll;
 mod evented;
-mod registration;
 mod net;
-mod plus;
+mod awakener;
+pub mod plus;
 
-pub use event::{Event, Events};
-pub use ready::Ready;
-pub use token::Token;
-pub use poll::Poll;
-pub use poll_opt::PollOpt;
-pub use registration::Registration;
-pub use evented::Evented;
-pub use sys::io;
-
-pub use net::tcp;
-
-pub use plus::channel;
-pub use plus::message_queue;
-pub use plus::timer;
+pub use self::event::{Event, Events};
+pub use self::ready::Ready;
+pub use self::token::Token;
+pub use self::poll::Poll;
+pub use self::poll_opt::PollOpt;
+pub use self::evented::Evented;
+pub use self::awakener::Awakener;
+pub use self::sys::io;
+pub use self::net::tcp;

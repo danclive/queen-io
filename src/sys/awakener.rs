@@ -4,10 +4,9 @@ use std::os::unix::io::RawFd;
 
 use libc;
 
-use sys::cvt;
-use sys::io::{self, Io, Read, Write};
-
-use {Poll, Token, Ready, PollOpt, Evented};
+use super::io::{self, Io, Read, Write};
+use super::cvt;
+use crate::{Poll, Token, Ready, PollOpt, Evented};
 
 #[derive(Debug)]
 pub struct Awakener {

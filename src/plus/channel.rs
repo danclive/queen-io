@@ -4,8 +4,8 @@ use std::error;
 use std::any::Any;
 use std::fmt;
 
-use sys::io;
-use {Registration, Ready, Evented, Poll, Token, PollOpt};
+use crate::sys::io;
+use crate::{Awakener, Ready, Evented, Poll, Token, PollOpt};
 
 pub fn channel<T>() -> io::Result<(Sender<T>, Receiver<T>)> {
     let (tx_ctl, rx_ctl) = ctl_pair()?;
@@ -42,12 +42,12 @@ pub fn sync_channel<T>(bound: usize) -> io::Result<(SyncSender<T>, Receiver<T>)>
 }
 
 pub fn ctl_pair() -> io::Result<(SenderCtl, ReceiverCtl)> {
-    let registration = Registration::new()?;
+    let awakener = Awakener::new()?;
 
     let inner = Arc::new(Inner {
         pending: AtomicUsize::new(0),
         senders: AtomicUsize::new(1),
-        registration
+        awakener
     });
 
     let tx = SenderCtl {
@@ -93,7 +93,7 @@ pub struct ReceiverCtl {
 struct Inner {
     pending: AtomicUsize,
     senders: AtomicUsize,
-    registration: Registration
+    awakener: Awakener
 }
 
 pub enum SendError<T> {
@@ -180,7 +180,7 @@ impl SenderCtl {
         let cnt = self.inner.pending.fetch_add(1, Ordering::Acquire);
 
         if 0 == cnt {
-            self.inner.registration.set_readiness(Ready::readable())?;
+            self.inner.awakener.set_readiness(Ready::readable())?;
         }
 
         Ok(())
@@ -207,13 +207,13 @@ impl ReceiverCtl {
         let first = self.inner.pending.load(Ordering::Acquire);
 
         if first == 1 {
-            self.inner.registration.set_readiness(Ready::empty())?;
+            self.inner.awakener.set_readiness(Ready::empty())?;
         }
 
         let second = self.inner.pending.fetch_sub(1, Ordering::AcqRel);
 
         if first == 1 && second > 1 {
-            self.inner.registration.set_readiness(Ready::readable())?;
+            self.inner.awakener.set_readiness(Ready::readable())?;
         }
 
         Ok(())
@@ -222,21 +222,21 @@ impl ReceiverCtl {
 
 impl Evented for ReceiverCtl {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.registration.register(poll, token, interest, opts)?;
+        self.inner.awakener.register(poll, token, interest, opts)?;
 
         if self.inner.pending.load(Ordering::Relaxed) > 0 {
-            self.inner.registration.set_readiness(Ready::readable())?;
+            self.inner.awakener.set_readiness(Ready::readable())?;
         }
 
         Ok(())
     }
 
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.registration.reregister(poll, token, interest, opts)
+        self.inner.awakener.reregister(poll, token, interest, opts)
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.inner.registration.deregister(poll)
+        self.inner.awakener.deregister(poll)
     }
 }
 

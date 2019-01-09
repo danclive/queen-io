@@ -1,6 +1,8 @@
 mod epoll;
 mod awakener;
 pub mod io;
+pub mod timerfd;
+pub mod eventfd;
 
 pub use self::epoll::{Epoll, Events};
 pub use self::awakener::Awakener;
