@@ -3,9 +3,9 @@
 
 use std::sync::Arc;
 use std::cell::UnsafeCell;
-
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::{Relaxed, Release, Acquire, AcqRel};
+use std::os::unix::io::{AsRawFd, RawFd};
 
 use crate::sys::io;
 use crate::{Awakener, Ready, Evented, Poll, Token, PollOpt};
@@ -179,6 +179,12 @@ impl<T: Send> Clone for Queue<T> {
         Queue {
             inner: self.inner.clone()
         }
+    }
+}
+
+impl<T: Send> AsRawFd for Queue<T> {
+    fn as_raw_fd(&self) -> RawFd {
+        self.inner.awakener.as_raw_fd()
     }
 }
 

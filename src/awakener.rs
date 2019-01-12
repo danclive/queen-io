@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::os::unix::io::{RawFd, AsRawFd, FromRawFd};
 
 use crate::sys::eventfd::EventFd;
 use crate::sys::io;
@@ -55,6 +56,20 @@ impl Awakener {
 
 		Ok(())
 	}
+}
+
+impl FromRawFd for Awakener {
+	unsafe fn from_raw_fd(fd: RawFd) -> Self {
+		Awakener {
+			inner: Arc::new(EventFd::from_raw_fd(fd))
+		}
+	}
+}
+
+impl AsRawFd for Awakener {
+    fn as_raw_fd(&self) -> RawFd {
+        self.inner.as_raw_fd()
+    }
 }
 
 impl Evented for Awakener {
