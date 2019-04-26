@@ -32,14 +32,14 @@ impl EventFd {
 
     pub fn read(&self) -> io::Result<u64> {
         let mut buf = [0u8; 8];
-        (&self.inner).read(&mut buf)?;
+        (&self.inner).read_exact(&mut buf)?;
         let temp: u64 = unsafe { mem::transmute(buf) };
-        return Ok(temp);
+        Ok(temp)
     }
 
     pub fn write(&self, val: u64) -> io::Result<()> {
         let buf: [u8; 8] = unsafe { mem::transmute(val) };
-        (&self.inner).write(&buf)?;
+        (&self.inner).write_all(&buf)?;
         Ok(())
     }
 }

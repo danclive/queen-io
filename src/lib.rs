@@ -8,6 +8,7 @@ mod evented;
 mod net;
 mod awakener;
 pub mod plus;
+pub mod queue;
 
 pub use event::{Event, Events};
 pub use ready::Ready;

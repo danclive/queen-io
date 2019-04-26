@@ -142,15 +142,15 @@ impl<'a> Write for &'a TcpStream {
 impl Evented for TcpStream {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
         self.selector_id.associate_selector(poll)?;
-        poll.inner().register(self.as_raw_fd(), token, interest, opts)
+        poll.0.register(self.as_raw_fd(), token, interest, opts)
     }
 
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll.inner().reregister(self.as_raw_fd(), token, interest, opts)
+        poll.0.reregister(self.as_raw_fd(), token, interest, opts)
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        poll.inner().deregister(self.as_raw_fd())
+        poll.0.deregister(self.as_raw_fd())
     }
 }
 
@@ -230,15 +230,15 @@ impl TcpListener {
 impl Evented for TcpListener {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
         self.selector_id.associate_selector(poll)?;
-        poll.inner().register(self.as_raw_fd(), token, interest, opts)
+        poll.register(&self.as_raw_fd(), token, interest, opts)
     }
 
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll.inner().reregister(self.as_raw_fd(), token, interest, opts)
+        poll.reregister(&self.as_raw_fd(), token, interest, opts)
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        poll.inner().deregister(self.as_raw_fd())
+        poll.deregister(&self.as_raw_fd())
     }
 }
 

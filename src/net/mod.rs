@@ -20,10 +20,10 @@ impl SelectorId {
     fn associate_selector(&self, poll: &Poll) -> io::Result<()> {
         let selector_id = self.id.load(Ordering::SeqCst);
 
-        if selector_id != 0 && selector_id != poll.inner().id() {
+        if selector_id != 0 && selector_id != poll.0.id() {
             Err(io::Error::new(io::ErrorKind::Other, "socket already registered"))
         } else {
-            self.id.store(poll.inner().id(), Ordering::SeqCst);
+            self.id.store(poll.0.id(), Ordering::SeqCst);
             Ok(())
         }
     }

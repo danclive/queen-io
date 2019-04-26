@@ -43,6 +43,12 @@ impl<T> Node<T> {
     }
 }
 
+impl<T> Default for Queue<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> Queue<T> {
     /// Creates a new queue that is safe to share among multiple producers and
     /// one consumer.
@@ -109,7 +115,7 @@ impl<T> Drop for Queue<T> {
     }
 }
 
-#[cfg(all(test, not(target_os = "emscripten")))]
+#[cfg(test)]
 mod tests {
     use std::sync::mpsc::channel;
     use std::sync::Arc;

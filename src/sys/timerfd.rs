@@ -29,7 +29,7 @@ pub struct TimerSpec {
 }
 
 impl TimerFd {
-    /// Create a timerfd with clickid: CLOCK_MONOTONIC and flags: TFD_CLOEXEC | TFD_NONBLOCK
+    /// Create a timerfd with clickid: CLOCK_REALTIME and flags: TFD_CLOEXEC | TFD_NONBLOCK
     /// http://man7.org/linux/man-pages/man2/timerfd_create.2.html
     ///
     /// # Example
@@ -40,7 +40,7 @@ impl TimerFd {
     /// let timerfd = TimerFd::new();
     /// ```
     pub fn new() -> io::Result<TimerFd> {
-        let clock = Clock::Monotonic;
+        let clock = Clock::Realtime;
         let flags = TFD_CLOEXEC | TFD_NONBLOCK;
         TimerFd::create(clock, flags)
     }
@@ -148,16 +148,16 @@ impl TimerFd {
     /// order, i.e., the native byte order for integers on the host machine.)
     pub fn read(&self) -> io::Result<u64> {
         let mut buf = [0u8; 8];
-        (&self.inner).read(&mut buf)?;
+        (&self.inner).read_exact(&mut buf)?;
         let temp: u64 = unsafe { mem::transmute(buf) };
-        return Ok(temp);
+        Ok(temp)
     }
 }
 
 fn duration_to_timespec(duration: Duration) -> libc::timespec {
     libc::timespec {
         tv_sec: duration.as_secs() as i64,
-        tv_nsec: duration.subsec_nanos() as i64
+        tv_nsec: i64::from(duration.subsec_nanos())
     }
 }
 

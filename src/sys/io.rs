@@ -85,14 +85,14 @@ impl<'a> Write for &'a Io {
 
 impl Evented for Io {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()> {
-        poll.inner().register(self.as_raw_fd(), token, interest, opts)
+        poll.register(&self.as_raw_fd(), token, interest, opts)
     }
 
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()> {
-        poll.inner().reregister(self.as_raw_fd(), token, interest, opts)
+        poll.reregister(&self.as_raw_fd(), token, interest, opts)
     }
 
     fn deregister(&self, poll: &Poll) -> Result<()> {
-        poll.inner().deregister(self.as_raw_fd())
+        poll.deregister(&self.as_raw_fd())
     }
 }

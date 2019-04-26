@@ -22,11 +22,6 @@ pub struct LruCache<K, V> {
     head: *mut LruEntry<K, V>,
 }
 
-// impl<S, K: Hash<S>> Hash<S> for KeyRef<K> {
-//     fn hash(&self, state: &mut S) {
-//         unsafe { (*self.k).hash(state) }
-//     }
-// }
 impl<K: Hash> Hash for KeyRef<K> {
     fn hash<S: Hasher>(&self, state: &mut S) {
         unsafe { (*self.k).hash(state) }
@@ -71,7 +66,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
             (*cache.head).next = cache.head;
             (*cache.head).prev = cache.head;
         }
-        return cache;
+        cache
     }
 
     /// Put a key-value pair into cache.
@@ -136,7 +131,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     /// assert_eq!(cache.get(&2), Some(&"c"));
     /// ```
     pub fn get<'a>(&'a mut self, k: &K) -> Option<&'a V> {
-        let (value, node_ptr_opt) = match self.map.get_mut(&KeyRef{k: k}) {
+        let (value, node_ptr_opt) = match self.map.get_mut(&KeyRef{k}) {
             None => (None, None),
             Some(node) => {
                 let node_ptr: *mut LruEntry<K, V> = &mut **node;
@@ -150,7 +145,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
                 self.attach(node_ptr);
             }
         }
-        return value;
+        value
     }
 
     /// Remove and return a value corresponding to the key from the cache.
@@ -169,7 +164,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     /// assert_eq!(cache.len(), 0);
     /// ```
     pub fn pop(&mut self, k: &K) -> Option<V> {
-        match self.map.remove(&KeyRef{k: k}) {
+        match self.map.remove(&KeyRef{k}) {
             None => None,
             Some(lru_entry) => Some(lru_entry.value)
         }
@@ -232,8 +227,13 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     }
 
     #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.map.len() == 0
+    }
+
+    #[inline]
     fn remove_lru(&mut self) {
-        if self.len() > 0 {
+        if !self.is_empty() {
             let lru = unsafe { (*self.head).prev };
             self.detach(lru);
             self.map.remove(&KeyRef{k: unsafe { &(*lru).key }});
@@ -304,15 +304,9 @@ impl<A: fmt::Display+ Hash + Eq, B: fmt::Display> fmt::Display for LruCache<A, B
 impl<K, V> Drop for LruCache<K, V> {
     fn drop(&mut self) {
         unsafe {
-            // let node: Box<LruEntry<K, V>> = mem::transmute(self.head);
-            // // Prevent compiler from trying to drop the un-initialized field in the sigil node.
-            // //let Box::new(internal_node) = node;
-            // let internal_node = node;
-            // let LruEntry { next: _, prev: _, key: k, value: v } = internal_node;
-            // mem::forget(k);
-            // mem::forget(v);
+            // Prevent compiler from trying to drop the un-initialized field in the sigil node.
             let node: Box<LruEntry<K, V>> = mem::transmute(self.head);
-            let LruEntry { next: _, prev: _, key: ref k, value: ref v } = *node;
+            let LruEntry { key: k, value: v, .. } = *node;
             mem::forget(k);
             mem::forget(v);
         }

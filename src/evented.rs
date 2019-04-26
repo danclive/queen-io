@@ -13,14 +13,14 @@ pub trait Evented {
 
 impl Evented for RawFd {
     fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll.inner().register(*self, token, interest, opts)
+        poll.0.register(*self, token, interest, opts)
     }
 
     fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll.inner().reregister(*self, token, interest, opts)
+        poll.0.reregister(*self, token, interest, opts)
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        poll.inner().deregister(*self)
+        poll.0.deregister(*self)
     }
 }

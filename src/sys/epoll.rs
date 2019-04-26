@@ -1,6 +1,6 @@
 use std::os::unix::io::AsRawFd;
 use std::os::unix::io::RawFd;
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use std::{cmp, i32, u64};
 
@@ -13,7 +13,7 @@ use crate::sys::{io, cvt};
 
 use crate::{Token, Ready, PollOpt, Event};
 
-static NEXT_ID: AtomicUsize = ATOMIC_USIZE_INIT;
+static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 
 pub struct Epoll {
     id: usize,

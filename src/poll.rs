@@ -6,22 +6,18 @@ use std::os::unix::io::RawFd;
 use crate::sys::{self, io};
 use crate::{Token, Ready, PollOpt, Events, Evented};
 
-pub struct Poll {
-    epoll: sys::Epoll
-}
+pub struct Poll(pub(crate) sys::Epoll);
 
 impl Poll {
     pub fn new() -> io::Result<Poll> {
         is_send::<Poll>();
         is_sync::<Poll>();
 
-        Ok(Poll {
-            epoll: sys::Epoll::new()?
-        })
+        Ok(Poll(sys::Epoll::new()?))
     }
 
     pub fn wait(&self, events: &mut Events, timeout: Option<Duration>) -> io::Result<usize> {
-        self.epoll.wait(&mut events.inner, timeout)?;
+        self.0.wait(&mut events.inner, timeout)?;
         Ok(events.len())
     }
 
@@ -52,15 +48,11 @@ impl Poll {
 
         Ok(())
     }
-
-    pub fn inner(&self) -> &sys::Epoll {
-        &self.epoll
-    }
 }
 
 impl AsRawFd for Poll {
     fn as_raw_fd(&self) -> RawFd {
-        self.epoll.as_raw_fd()
+        self.0.as_raw_fd()
     }
 }
 
