@@ -3,9 +3,9 @@ use std::time::Duration;
 use std::net::{self, ToSocketAddrs, SocketAddr};
 use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
 
-use crate::sys::io::{self, set_nonblock};
+use crate::sys::io;
 use crate::{Poll, Token, Ready, PollOpt, Evented};
-use super::SelectorId;
+use crate::SelectorId;
 
 #[derive(Debug)]
 pub struct TcpStream {
@@ -13,6 +13,7 @@ pub struct TcpStream {
     selector_id: SelectorId,
 }
 
+#[derive(Debug)]
 pub struct TcpListener {
     inner: net::TcpListener,
     selector_id: SelectorId
@@ -206,11 +207,7 @@ impl TcpListener {
 
     pub fn accept(&self) -> io::Result<(TcpStream, SocketAddr)> {
         self.inner.accept().and_then(|(s, a)| {
-            set_nonblock(s.as_raw_fd())?;
-            Ok((TcpStream {
-                inner: s,
-                selector_id: SelectorId::new()
-            }, a))
+            Ok((TcpStream::new(s)?, a))
         })
     }
 
