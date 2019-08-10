@@ -1,12 +1,12 @@
 [package]
 name          = "queen-io"
-version       = "0.3.1"
+version       = "0.3.2"
 license       = "MIT"
-authors       = ["mitum <dangcheng@hotmail.com>"]
+authors       = ["danc <dangcheng@hotmail.com>"]
 description   = "I/O library for Rust"
 documentation = "https://docs.rs/queen-io"
-homepage      = "https://github.com/mitum/queen-io"
-repository    = "https://github.com/mitum/queen-io"
+homepage      = "https://github.com/danclive/queen-io"
+repository    = "https://github.com/danclive/queen-io"
 readme        = "README.md"
 keywords      = ["io", "epoll", "event-loop"]
 exclude       = [

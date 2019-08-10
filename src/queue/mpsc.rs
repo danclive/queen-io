@@ -30,7 +30,6 @@ impl <T: Send> Queue<T> {
 
     fn inc(&self) -> io::Result<()> {
         let cnt = self.inner.pending.fetch_add(1, Acquire);
-
         if 0 == cnt {
             self.inner.awakener.set_readiness(Ready::readable())?;
         }
@@ -65,6 +64,10 @@ impl <T: Send> Queue<T> {
         }
 
         None
+    }
+
+    pub fn pending(&self) -> usize {
+        self.inner.pending.load(Acquire)
     }
 }
 

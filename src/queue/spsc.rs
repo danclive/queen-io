@@ -61,6 +61,10 @@ impl <T: Send> Queue<T> {
     pub fn pop(&self) -> Option<T> {
         self.inner.queue.pop().and_then(|res| {let _ = self.dec(); Some(res)})
     }
+
+    pub fn pending(&self) -> usize {
+        self.inner.pending.load(Acquire)
+    }
 }
 
 impl<T: Send> Clone for Queue<T> {
