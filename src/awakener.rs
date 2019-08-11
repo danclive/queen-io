@@ -3,7 +3,7 @@ use std::os::unix::io::{RawFd, AsRawFd, FromRawFd};
 
 use crate::sys::eventfd::EventFd;
 use crate::sys::io;
-use crate::{Poll, Token, Ready, PollOpt, Evented};
+use crate::{Epoll, Token, Ready, EpollOpt, Evented};
 
 #[derive(Debug, Clone)]
 pub struct Awakener {
@@ -73,15 +73,15 @@ impl AsRawFd for Awakener {
 }
 
 impl Evented for Awakener {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.register(poll, token, interest, opts)
+    fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        self.inner.add(epoll, token, interest, opts)
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.reregister(poll, token, interest, opts)
+    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        self.inner.modify(epoll, token, interest, opts)
     }
 
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.inner.deregister(poll)
+    fn delete(&self, epoll: &Epoll) -> io::Result<()> {
+        self.inner.delete(epoll)
     }
 }

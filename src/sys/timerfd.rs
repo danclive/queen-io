@@ -3,7 +3,7 @@ use std::time::Duration;
 use std::mem;
 use super::io::{self, Io, Read};
 use super::cvt;
-use crate::{Poll, Token, Ready, PollOpt, Evented};
+use crate::{Epoll, Token, Ready, EpollOpt, Evented};
 
 #[repr(i32)]
 pub enum Clock {
@@ -185,18 +185,16 @@ impl AsRawFd for TimerFd {
     }
 }
 
-
 impl Evented for TimerFd {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.register(poll, token, interest, opts)
+    fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        epoll.add(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.reregister(poll, token, interest, opts)
+    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        epoll.modify(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.inner.deregister(poll)
+    fn delete(&self, epoll: &Epoll) -> io::Result<()> {
+        epoll.delete(&self.as_raw_fd())
     }
 }
-

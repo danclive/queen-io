@@ -1,20 +1,19 @@
 use std::time::Duration;
 use std::fmt;
-use std::os::unix::io::AsRawFd;
-use std::os::unix::io::RawFd;
+use std::os::unix::io::{AsRawFd, RawFd};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::sys::{self, io};
-use crate::{Token, Ready, PollOpt, Events, Evented};
+use crate::{Token, Ready, EpollOpt, Events, Evented};
 
-pub struct Poll(pub(crate) sys::Epoll);
+pub struct Epoll(pub(crate) sys::Epoll);
 
-impl Poll {
-    pub fn new() -> io::Result<Poll> {
-        is_send::<Poll>();
-        is_sync::<Poll>();
+impl Epoll {
+    pub fn new() -> io::Result<Epoll> {
+        is_send::<Epoll>();
+        is_sync::<Epoll>();
 
-        Ok(Poll(sys::Epoll::new()?))
+        Ok(Epoll(sys::Epoll::new()?))
     }
 
     pub fn wait(&self, events: &mut Events, timeout: Option<Duration>) -> io::Result<usize> {
@@ -22,44 +21,44 @@ impl Poll {
         Ok(events.len())
     }
 
-    pub fn register<E: ?Sized>(&self, handle: &E, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()>
+    pub fn add<E: ?Sized>(&self, handle: &E, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>
         where E: Evented
     {
         validate_args(token, interest)?;
 
-        handle.register(self, token, interest, opts)?;
+        handle.add(self, token, interest, opts)?;
 
         Ok(())
     }
 
-    pub fn reregister<E: ?Sized>(&self, handle: &E, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()>
+    pub fn modify<E: ?Sized>(&self, handle: &E, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>
         where E: Evented
     {
         validate_args(token, interest)?;
 
-        handle.reregister(self, token, interest, opts)?;
+        handle.modify(self, token, interest, opts)?;
 
         Ok(())
     }
 
-    pub fn deregister<E: ?Sized>(&self, handle: &E) -> io::Result<()>
+    pub fn delete<E: ?Sized>(&self, handle: &E) -> io::Result<()>
         where E: Evented
     {
-        handle.deregister(self)?;
+        handle.delete(self)?;
 
         Ok(())
     }
 }
 
-impl AsRawFd for Poll {
+impl AsRawFd for Epoll {
     fn as_raw_fd(&self) -> RawFd {
         self.0.as_raw_fd()
     }
 }
 
-impl fmt::Debug for Poll {
+impl fmt::Debug for Epoll {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "Poll")
+        write!(fmt, "Epoll")
     }
 }
 
@@ -86,11 +85,11 @@ impl SelectorId {
         }
     }
 
-    pub fn associate_selector(&self, poll: &Poll) -> io::Result<()> {
+    pub fn associate_selector(&self, poll: &Epoll) -> io::Result<()> {
         let selector_id = self.id.load(Ordering::SeqCst);
 
         if selector_id != 0 && selector_id != poll.0.id() {
-            Err(io::Error::new(io::ErrorKind::Other, "socket already registered"))
+            Err(io::Error::new(io::ErrorKind::Other, "socket already added"))
         } else {
             self.id.store(poll.0.id(), Ordering::SeqCst);
             Ok(())

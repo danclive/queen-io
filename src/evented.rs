@@ -1,26 +1,26 @@
 use std::os::unix::io::RawFd;
 
 use crate::sys::io;
-use crate::{Poll, Token, Ready, PollOpt};
+use crate::{Epoll, Token, Ready, EpollOpt};
 
 pub trait Evented {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()>;
+    fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>;
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()>;
+    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>;
 
-    fn deregister(&self, poll: &Poll) -> io::Result<()>;
+    fn delete(&self, epoll: &Epoll) -> io::Result<()>;
 }
 
 impl Evented for RawFd {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll.0.register(*self, token, interest, opts)
+    fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        epoll.0.add(*self, token, interest, opts)
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll.0.reregister(*self, token, interest, opts)
+    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        epoll.0.modify(*self, token, interest, opts)
     }
 
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        poll.0.deregister(*self)
+    fn delete(&self, epoll: &Epoll) -> io::Result<()> {
+        epoll.0.delete(*self)
     }
 }

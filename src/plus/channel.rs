@@ -5,7 +5,7 @@ use std::any::Any;
 use std::fmt;
 
 use crate::sys::io;
-use crate::{Awakener, Ready, Evented, Poll, Token, PollOpt};
+use crate::{Awakener, Ready, Evented, Epoll, Token, EpollOpt};
 
 pub fn channel<T>() -> io::Result<(Sender<T>, Receiver<T>)> {
     let (tx_ctl, rx_ctl) = ctl_pair()?;
@@ -162,16 +162,16 @@ impl<T> Receiver<T> {
 }
 
 impl<T> Evented for Receiver<T> {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.ctl.register(poll, token, interest, opts)
+    fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        self.ctl.add(epoll, token, interest, opts)
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.ctl.reregister(poll, token, interest, opts)
+    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        self.ctl.modify(epoll, token, interest, opts)
     }
 
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.ctl.deregister(poll)
+    fn delete(&self, epoll: &Epoll) -> io::Result<()> {
+        self.ctl.delete(epoll)
     }
 }
 
@@ -221,8 +221,8 @@ impl ReceiverCtl {
 }
 
 impl Evented for ReceiverCtl {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.awakener.register(poll, token, interest, opts)?;
+    fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        self.inner.awakener.add(epoll, token, interest, opts)?;
 
         if self.inner.pending.load(Ordering::Relaxed) > 0 {
             self.inner.awakener.set_readiness(Ready::readable())?;
@@ -231,12 +231,12 @@ impl Evented for ReceiverCtl {
         Ok(())
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.awakener.reregister(poll, token, interest, opts)
+    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        self.inner.awakener.modify(epoll, token, interest, opts)
     }
 
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.inner.awakener.deregister(poll)
+    fn delete(&self, epoll: &Epoll) -> io::Result<()> {
+        self.inner.awakener.delete(epoll)
     }
 }
 

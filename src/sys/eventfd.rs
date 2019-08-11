@@ -4,7 +4,7 @@ use libc;
 
 use super::io::{self, Io, Read, Write};
 use super::cvt;
-use crate::{Poll, Token, Ready, PollOpt, Evented};
+use crate::{Epoll, Token, Ready, EpollOpt, Evented};
 
 pub const EFD_CLOEXEC: i32 = libc::EFD_CLOEXEC;
 pub const EFD_NONBLOCK: i32 = libc::EFD_NONBLOCK;
@@ -65,19 +65,18 @@ impl AsRawFd for EventFd {
 }
 
 impl Evented for EventFd {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.register(poll, token, interest, opts)
+    fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        epoll.add(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.reregister(poll, token, interest, opts)
+    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        epoll.modify(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.inner.deregister(poll)
+    fn delete(&self, epoll: &Epoll) -> io::Result<()> {
+        epoll.delete(&self.as_raw_fd())
     }
 }
-
 
 #[cfg(test)]
 mod test {

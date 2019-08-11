@@ -5,7 +5,7 @@ use std::os::unix::io::{AsRawFd, RawFd};
 
 use crate::plus::spsc_queue;
 use crate::sys::io;
-use crate::{Awakener, Ready, Evented, Poll, Token, PollOpt};
+use crate::{Awakener, Ready, Evented, Epoll, Token, EpollOpt};
 
 pub struct Queue<T: Send> {
     inner: Arc<Inner<T>>
@@ -82,8 +82,8 @@ impl<T: Send> AsRawFd for Queue<T> {
 }
 
 impl<T: Send> Evented for Queue<T> {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.awakener.register(poll, token, interest, opts)?;
+    fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        self.inner.awakener.add(epoll, token, interest, opts)?;
 
         if self.inner.pending.load(Relaxed) > 0 {
             self.inner.awakener.set_readiness(Ready::readable())?;
@@ -92,11 +92,11 @@ impl<T: Send> Evented for Queue<T> {
         Ok(())
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.inner.awakener.reregister(poll, token, interest, opts)
+    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        self.inner.awakener.modify(epoll, token, interest, opts)
     }
 
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.inner.awakener.deregister(poll)
+    fn delete(&self, epoll: &Epoll) -> io::Result<()> {
+        self.inner.awakener.delete(epoll)
     }
 }

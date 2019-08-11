@@ -11,7 +11,7 @@ use libc::{EPOLLRDHUP, EPOLLONESHOT};
 
 use crate::sys::{io, cvt};
 
-use crate::{Token, Ready, PollOpt, Event};
+use crate::{Token, Ready, EpollOpt, Event};
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 
@@ -58,7 +58,7 @@ impl Epoll {
         }
     }
 
-    pub fn register(&self, fd: RawFd, token: Token, interests: Ready, opts: PollOpt) -> io::Result<()> {
+    pub fn add(&self, fd: RawFd, token: Token, interests: Ready, opts: EpollOpt) -> io::Result<()> {
         let mut info = libc::epoll_event {
             events: ioevent_to_epoll(interests, opts),
             u64: usize::from(token) as u64
@@ -70,7 +70,7 @@ impl Epoll {
         }
     }
 
-    pub fn reregister(&self, fd: RawFd, token: Token, interests: Ready, opts: PollOpt) -> io::Result<()> {
+    pub fn modify(&self, fd: RawFd, token: Token, interests: Ready, opts: EpollOpt) -> io::Result<()> {
         let mut info = libc::epoll_event {
             events: ioevent_to_epoll(interests, opts),
             u64: usize::from(token) as u64
@@ -82,7 +82,7 @@ impl Epoll {
         }
     }
 
-    pub fn deregister(&self, fd: RawFd) -> io::Result<()> {
+    pub fn delete(&self, fd: RawFd) -> io::Result<()> {
         let mut info = libc::epoll_event {
             events: 0,
             u64: 0,
@@ -95,7 +95,7 @@ impl Epoll {
     }
 }
 
-fn ioevent_to_epoll(interest: Ready, opts: PollOpt) -> u32 {
+fn ioevent_to_epoll(interest: Ready, opts: EpollOpt) -> u32 {
     let mut kind = 0;
 
     if interest.is_readable() {

@@ -4,7 +4,7 @@ use std::net::{self, ToSocketAddrs, SocketAddr};
 use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
 
 use crate::sys::io;
-use crate::{Poll, Token, Ready, PollOpt, Evented};
+use crate::{Epoll, Token, Ready, EpollOpt, Evented};
 use crate::SelectorId;
 
 #[derive(Debug)]
@@ -141,17 +141,17 @@ impl<'a> Write for &'a TcpStream {
 }
 
 impl Evented for TcpStream {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.selector_id.associate_selector(poll)?;
-        poll.0.register(self.as_raw_fd(), token, interest, opts)
+    fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        self.selector_id.associate_selector(epoll)?;
+        epoll.add(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll.0.reregister(self.as_raw_fd(), token, interest, opts)
+    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        epoll.modify(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        poll.0.deregister(self.as_raw_fd())
+    fn delete(&self, epoll: &Epoll) -> io::Result<()> {
+        epoll.delete(&self.as_raw_fd())
     }
 }
 
@@ -225,17 +225,17 @@ impl TcpListener {
 }
 
 impl Evented for TcpListener {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.selector_id.associate_selector(poll)?;
-        poll.register(&self.as_raw_fd(), token, interest, opts)
+    fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        self.selector_id.associate_selector(epoll)?;
+        epoll.add(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> io::Result<()> {
-        poll.reregister(&self.as_raw_fd(), token, interest, opts)
+    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+        epoll.modify(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        poll.deregister(&self.as_raw_fd())
+    fn delete(&self, epoll: &Epoll) -> io::Result<()> {
+        epoll.delete(&self.as_raw_fd())
     }
 }
 

@@ -6,7 +6,7 @@ use libc;
 
 use crate::sys::cvt;
 
-use crate::{Poll, Token, Ready, PollOpt, Evented};
+use crate::{Epoll, Token, Ready, EpollOpt, Evented};
 
 pub fn set_nonblock(fd: libc::c_int) -> Result<()> {
     unsafe {
@@ -84,15 +84,15 @@ impl<'a> Write for &'a Io {
 }
 
 impl Evented for Io {
-    fn register(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()> {
-        poll.register(&self.as_raw_fd(), token, interest, opts)
+    fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> Result<()> {
+        epoll.add(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn reregister(&self, poll: &Poll, token: Token, interest: Ready, opts: PollOpt) -> Result<()> {
-        poll.reregister(&self.as_raw_fd(), token, interest, opts)
+    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> Result<()> {
+        epoll.modify(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn deregister(&self, poll: &Poll) -> Result<()> {
-        poll.deregister(&self.as_raw_fd())
+    fn delete(&self, epoll: &Epoll) -> Result<()> {
+        epoll.delete(&self.as_raw_fd())
     }
 }
