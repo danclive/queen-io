@@ -10,8 +10,7 @@ use libc::{EPOLLET, EPOLLOUT, EPOLLIN, EPOLLPRI};
 use libc::{EPOLLRDHUP, EPOLLONESHOT};
 
 use crate::sys::{io, cvt};
-
-use crate::{Token, Ready, EpollOpt, Event};
+use crate::epoll::{Token, Ready, EpollOpt, Event};
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 

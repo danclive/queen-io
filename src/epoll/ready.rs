@@ -156,4 +156,3 @@ impl fmt::Debug for Ready {
         Ok(())
     }
 }
-

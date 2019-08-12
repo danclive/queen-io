@@ -134,4 +134,3 @@ impl fmt::Debug for EpollOpt {
         Ok(())
     }
 }
-

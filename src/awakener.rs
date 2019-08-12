@@ -3,7 +3,7 @@ use std::os::unix::io::{RawFd, AsRawFd, FromRawFd};
 
 use crate::sys::eventfd::EventFd;
 use crate::sys::io;
-use crate::{Epoll, Token, Ready, EpollOpt, Evented};
+use crate::epoll::{Ready, Evented, Epoll, Token, EpollOpt};
 
 #[derive(Debug, Clone)]
 pub struct Awakener {

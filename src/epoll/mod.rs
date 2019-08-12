@@ -4,7 +4,18 @@ use std::os::unix::io::{AsRawFd, RawFd};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::sys::{self, io};
-use crate::{Token, Ready, EpollOpt, Events, Evented};
+
+pub use epoll_opt::EpollOpt;
+pub use event::{Event, Events, Iter, IntoIter};
+pub use evented::Evented;
+pub use ready::Ready;
+pub use token::Token;
+
+mod epoll_opt;
+mod event;
+mod evented;
+mod ready;
+mod token;
 
 pub struct Epoll(pub(crate) sys::Epoll);
 

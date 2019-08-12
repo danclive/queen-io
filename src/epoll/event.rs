@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::sys;
-use crate::{Token, Ready};
+use super::{Token, Ready};
 
 pub struct Events {
     pub inner: sys::Events

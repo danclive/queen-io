@@ -5,7 +5,8 @@ use std::any::Any;
 use std::fmt;
 
 use crate::sys::io;
-use crate::{Awakener, Ready, Evented, Epoll, Token, EpollOpt};
+use crate::Awakener;
+use crate::epoll::{Ready, Evented, Epoll, Token, EpollOpt};
 
 pub fn channel<T>() -> io::Result<(Sender<T>, Receiver<T>)> {
     let (tx_ctl, rx_ctl) = ctl_pair()?;

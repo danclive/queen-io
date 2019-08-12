@@ -6,8 +6,7 @@ use std::os::unix::net::{self, SocketAddr};
 use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
 
 use crate::sys::io;
-use crate::{Epoll, Token, Ready, EpollOpt, Evented};
-use crate::SelectorId;
+use crate::epoll::{SelectorId, Ready, Evented, Epoll, Token, EpollOpt};
 
 #[derive(Debug)]
 pub struct UnixStream {

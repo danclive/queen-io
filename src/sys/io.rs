@@ -5,8 +5,7 @@ pub use std::io::{Read, Write, Result, Error, ErrorKind};
 use libc;
 
 use crate::sys::cvt;
-
-use crate::{Epoll, Token, Ready, EpollOpt, Evented};
+use crate::epoll::{Epoll, Token, Ready, EpollOpt, Evented};
 
 pub fn set_nonblock(fd: libc::c_int) -> Result<()> {
     unsafe {

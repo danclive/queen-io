@@ -1,9 +1,11 @@
 use std::os::unix::io::{RawFd, AsRawFd, FromRawFd, IntoRawFd};
 use std::time::Duration;
 use std::mem;
+
+use crate::epoll::{Epoll, Token, Ready, EpollOpt, Evented};
+
 use super::io::{self, Io, Read};
 use super::cvt;
-use crate::{Epoll, Token, Ready, EpollOpt, Evented};
 
 #[repr(i32)]
 pub enum Clock {

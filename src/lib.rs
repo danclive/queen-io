@@ -1,21 +1,11 @@
+pub use sys::io;
+pub use awakener::Awakener;
+pub use net::{tcp, unix};
+
 pub mod sys;
-mod event;
-mod token;
-mod ready;
-mod epoll_opt;
-mod epoll;
-mod evented;
+pub mod epoll;
+pub mod poll;
 mod net;
 mod awakener;
 pub mod plus;
 pub mod queue;
-
-pub use event::{Event, Events};
-pub use ready::Ready;
-pub use token::Token;
-pub use epoll::{Epoll, SelectorId};
-pub use epoll_opt::EpollOpt;
-pub use evented::Evented;
-pub use awakener::Awakener;
-pub use sys::io;
-pub use net::{tcp, unix};

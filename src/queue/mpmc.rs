@@ -5,7 +5,8 @@ use std::os::unix::io::{AsRawFd, RawFd};
 
 use crate::plus::mpmc_queue;
 use crate::sys::io;
-use crate::{Awakener, Ready, Evented, Epoll, Token, EpollOpt};
+use crate::Awakener;
+use crate::epoll::{Ready, Evented, Epoll, Token, EpollOpt};
 
 pub struct Queue<T: Send> {
     inner: Arc<Inner<T>>

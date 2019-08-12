@@ -2,9 +2,10 @@ use std::os::unix::io::{RawFd, AsRawFd, FromRawFd, IntoRawFd};
 use std::mem;
 use libc;
 
+use crate::epoll::{Epoll, Token, Ready, EpollOpt, Evented};
+
 use super::io::{self, Io, Read, Write};
 use super::cvt;
-use crate::{Epoll, Token, Ready, EpollOpt, Evented};
 
 pub const EFD_CLOEXEC: i32 = libc::EFD_CLOEXEC;
 pub const EFD_NONBLOCK: i32 = libc::EFD_NONBLOCK;

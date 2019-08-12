@@ -1,7 +1,7 @@
 use std::os::unix::io::RawFd;
 
 use crate::sys::io;
-use crate::{Epoll, Token, Ready, EpollOpt};
+use super::{Epoll, Token, Ready, EpollOpt};
 
 pub trait Evented {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>;
