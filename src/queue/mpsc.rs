@@ -68,7 +68,7 @@ impl <T: Send> Queue<T> {
     }
 
     pub fn pending(&self) -> usize {
-        self.inner.pending.load(Acquire)
+        self.inner.pending.load(Relaxed)
     }
 }
 
