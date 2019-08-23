@@ -22,6 +22,9 @@ pub struct LruCache<K, V> {
     head: *mut LruEntry<K, V>,
 }
 
+unsafe impl<K: Send, V: Send> Send for LruCache<K, V> { }
+unsafe impl<K: Sync, V: Sync> Sync for LruCache<K, V> { }
+
 impl<K: Hash> Hash for KeyRef<K> {
     fn hash<S: Hasher>(&self, state: &mut S) {
         unsafe { (*self.k).hash(state) }
