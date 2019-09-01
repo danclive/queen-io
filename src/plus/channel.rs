@@ -3,8 +3,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::error;
 use std::any::Any;
 use std::fmt;
+use std::io;
 
-use crate::sys::io;
 use crate::Awakener;
 use crate::epoll::{Ready, Evented, Epoll, Token, EpollOpt};
 

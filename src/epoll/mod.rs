@@ -2,8 +2,9 @@ use std::time::Duration;
 use std::fmt;
 use std::os::unix::io::{AsRawFd, RawFd};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::io;
 
-use crate::sys::{self, io};
+use crate::sys;
 
 pub use epoll_opt::EpollOpt;
 pub use event::{Event, Events, Iter, IntoIter};

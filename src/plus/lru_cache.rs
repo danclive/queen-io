@@ -63,7 +63,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
         let cache = LruCache {
             map: HashMap::new(),
             max_size: capacity,
-            head: unsafe{ mem::transmute(Box::new(mem::uninitialized::<LruEntry<K, V>>())) },
+            head: unsafe{ mem::transmute(Box::new(mem::MaybeUninit::<LruEntry<K, V>>::uninit().assume_init())) },
         };
         unsafe {
             (*cache.head).next = cache.head;

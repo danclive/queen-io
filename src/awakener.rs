@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use std::os::unix::io::{RawFd, AsRawFd, FromRawFd};
+use std::io;
 
 use crate::sys::eventfd::EventFd;
-use crate::sys::io;
 use crate::epoll::{Ready, Evented, Epoll, Token, EpollOpt};
 
 #[derive(Debug, Clone)]

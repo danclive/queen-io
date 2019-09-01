@@ -4,8 +4,8 @@ use std::time::Duration;
 use std::net::Shutdown;
 use std::os::unix::net::{self, SocketAddr};
 use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
+use std::io;
 
-use crate::sys::io;
 use crate::epoll::{SelectorId, Ready, Evented, Epoll, Token, EpollOpt};
 
 #[derive(Debug)]

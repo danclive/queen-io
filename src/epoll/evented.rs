@@ -1,6 +1,6 @@
 use std::os::unix::io::RawFd;
+use std::io;
 
-use crate::sys::io;
 use super::{Epoll, Token, Ready, EpollOpt};
 
 pub trait Evented {

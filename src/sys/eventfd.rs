@@ -1,11 +1,13 @@
 use std::os::unix::io::{RawFd, AsRawFd, FromRawFd, IntoRawFd};
 use std::mem;
+use std::io::{self, Read, Write};
+
 use libc;
 
 use crate::epoll::{Epoll, Token, Ready, EpollOpt, Evented};
 
-use super::io::{self, Io, Read, Write};
 use super::cvt;
+use super::fd::FileDesc;
 
 pub const EFD_CLOEXEC: i32 = libc::EFD_CLOEXEC;
 pub const EFD_NONBLOCK: i32 = libc::EFD_NONBLOCK;
@@ -13,7 +15,7 @@ pub const EFD_SEMAPHORE: i32 = libc::EFD_SEMAPHORE;
 
 #[derive(Debug)]
 pub struct EventFd {
-    inner: Io
+    inner: FileDesc
 }
 
 impl EventFd {
@@ -27,7 +29,7 @@ impl EventFd {
     pub fn with_options(initval: u32, flags: i32) -> io::Result<EventFd> {
         let eventfd = unsafe { cvt(libc::eventfd(initval, flags))? };
         Ok(EventFd {
-            inner: unsafe { Io::from_raw_fd(eventfd) }
+            inner: FileDesc::new(eventfd)
         })
     }
 
@@ -48,20 +50,20 @@ impl EventFd {
 impl FromRawFd for EventFd {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         EventFd {
-            inner: Io::from_raw_fd(fd)
+            inner: FileDesc::new(fd)
         }
     }
 }
 
 impl IntoRawFd for EventFd {
     fn into_raw_fd(self) -> RawFd {
-        self.inner.into_raw_fd()
+        self.inner.into_raw()
     }
 }
 
 impl AsRawFd for EventFd {
     fn as_raw_fd(&self) -> RawFd {
-        self.inner.as_raw_fd()
+        self.inner.raw()
     }
 }
 

@@ -2,9 +2,9 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering::{Relaxed, Acquire, AcqRel};
 use std::os::unix::io::{AsRawFd, RawFd};
+use std::io;
 
 use crate::plus::mpmc_queue;
-use crate::sys::io;
 use crate::Awakener;
 use crate::epoll::{Ready, Evented, Epoll, Token, EpollOpt};
 

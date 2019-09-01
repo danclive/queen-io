@@ -1,4 +1,3 @@
-pub use sys::io;
 pub use awakener::Awakener;
 pub use net::{tcp, unix};
 

@@ -1,11 +1,12 @@
 use std::os::unix::io::{RawFd, AsRawFd, FromRawFd, IntoRawFd};
 use std::time::Duration;
 use std::mem;
+use std::io::{self, Read};
 
 use crate::epoll::{Epoll, Token, Ready, EpollOpt, Evented};
 
-use super::io::{self, Io, Read};
 use super::cvt;
+use super::fd::FileDesc;
 
 #[repr(i32)]
 pub enum Clock {
@@ -21,7 +22,7 @@ pub const TFD_NONBLOCK: i32 = libc::TFD_NONBLOCK;
 
 #[derive(Debug)]
 pub struct TimerFd {
-    inner: Io
+    inner: FileDesc
 }
 
 #[derive(Debug)]
@@ -61,7 +62,7 @@ impl TimerFd {
     pub fn create(clock: Clock, flags: i32) -> io::Result<TimerFd> {
         let timerfd = unsafe { cvt(libc::timerfd_create(clock as i32, flags))? };
         Ok(TimerFd {
-            inner: unsafe { Io::from_raw_fd(timerfd) }
+            inner: FileDesc::new(timerfd)
         })
     }
 
@@ -95,7 +96,7 @@ impl TimerFd {
 
         unsafe {
             cvt(libc::timerfd_settime(
-                self.inner.as_raw_fd(),
+                self.inner.raw(),
                 flags,
                 &new_value as *const libc::itimerspec,
                 &mut old_value as *mut libc::itimerspec
@@ -131,7 +132,7 @@ impl TimerFd {
         let mut itimerspec: libc::itimerspec = unsafe { mem::zeroed() };
         unsafe {
             cvt(libc::timerfd_gettime(
-                self.inner.as_raw_fd(),
+                self.inner.raw(),
                 &mut itimerspec as *mut libc::itimerspec
             ))?;
         }
@@ -170,20 +171,20 @@ fn timespec_to_duration(timespec: libc::timespec) -> Duration {
 impl FromRawFd for TimerFd {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         TimerFd {
-            inner: Io::from_raw_fd(fd)
+            inner: FileDesc::new(fd)
         }
     }
 }
 
 impl IntoRawFd for TimerFd {
     fn into_raw_fd(self) -> RawFd {
-        self.inner.into_raw_fd()
+        self.inner.into_raw()
     }
 }
 
 impl AsRawFd for TimerFd {
     fn as_raw_fd(&self) -> RawFd {
-        self.inner.as_raw_fd()
+        self.inner.raw()
     }
 }
 

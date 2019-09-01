@@ -3,14 +3,16 @@ use std::os::unix::io::RawFd;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use std::{cmp, i32, u64};
+use std::io;
 
 use libc::{self, c_int};
 use libc::{EPOLLERR, EPOLLHUP};
 use libc::{EPOLLET, EPOLLOUT, EPOLLIN, EPOLLPRI};
 use libc::{EPOLLRDHUP, EPOLLONESHOT};
 
-use crate::sys::{io, cvt};
 use crate::epoll::{Token, Ready, EpollOpt, Event};
+
+use super::cvt;
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 
