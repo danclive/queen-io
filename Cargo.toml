@@ -20,4 +20,4 @@ edition = "2018"
 
 [dependencies]
 libc     = "0.2"
-indexmap = { git = "https://github.com/bluss/indexmap.git" }
+indexmap = "1.2"
