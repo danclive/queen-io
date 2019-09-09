@@ -2,6 +2,7 @@ use std::os::unix::io::{RawFd, AsRawFd, FromRawFd, IntoRawFd};
 use std::time::Duration;
 use std::mem;
 use std::io::{self, Read};
+use std::convert::TryInto;
 
 use crate::epoll::{Epoll, Token, Ready, EpollOpt, Evented};
 
@@ -159,8 +160,8 @@ impl TimerFd {
 
 fn duration_to_timespec(duration: Duration) -> libc::timespec {
     libc::timespec {
-        tv_sec: duration.as_secs() as i64,
-        tv_nsec: i64::from(duration.subsec_nanos())
+        tv_sec: duration.as_secs().try_into().unwrap(),
+        tv_nsec: duration.subsec_nanos().try_into().unwrap()
     }
 }
 

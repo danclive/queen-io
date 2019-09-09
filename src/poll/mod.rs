@@ -2,6 +2,7 @@ use std::io;
 use std::time::Duration;
 use std::cmp;
 use std::i32;
+use std::convert::TryInto;
 
 mod ready;
 mod event;
@@ -14,7 +15,7 @@ pub fn poll(evts: &mut Events, timeout: Option<Duration>) -> io::Result<i32> {
             .map(|to| cmp::min(millis(to), i32::MAX as u64) as i32)
             .unwrap_or(-1);
 
-    let ret = unsafe { libc::poll(evts.events.as_mut_ptr(), evts.len() as u64, timeout_ms) };
+    let ret = unsafe { libc::poll(evts.events.as_mut_ptr(), evts.len().try_into().unwrap(), timeout_ms) };
     if ret < 0 {
         let err = io::Error::last_os_error();
         if err.kind() != io::ErrorKind::Interrupted {
