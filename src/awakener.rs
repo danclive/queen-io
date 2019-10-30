@@ -11,59 +11,59 @@ pub struct Awakener {
 }
 
 impl Awakener {
-	pub fn new() -> io::Result<Awakener> {
-		let eventfd = EventFd::new()?;
+    pub fn new() -> io::Result<Awakener> {
+        let eventfd = EventFd::new()?;
 
-		Ok(Awakener {
-			inner: Arc::new(eventfd)
-		})
-	}
+        Ok(Awakener {
+            inner: Arc::new(eventfd)
+        })
+    }
 
-	pub fn wakeup(&self) -> io::Result<()> {
-		match self.inner.write(1) {
-			Ok(_) => Ok(()),
-			Err(e) => {
-				if e.kind() == io::ErrorKind::WouldBlock {
-					Ok(())
-				} else {
-					Err(e)
-				}
-			}
-		}
-	}
+    pub fn wakeup(&self) -> io::Result<()> {
+        match self.inner.write(1) {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                if e.kind() == io::ErrorKind::WouldBlock {
+                    Ok(())
+                } else {
+                    Err(e)
+                }
+            }
+        }
+    }
 
-	pub fn finish(&self) -> io::Result<()> {
-		match self.inner.read() {
-			Ok(_) => Ok(()),
-			Err(e) => {
-				if e.kind() == io::ErrorKind::WouldBlock {
-					Ok(())
-				} else {
-					Err(e)
-				}
-			}
-		}
-	}
+    pub fn finish(&self) -> io::Result<()> {
+        match self.inner.read() {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                if e.kind() == io::ErrorKind::WouldBlock {
+                    Ok(())
+                } else {
+                    Err(e)
+                }
+            }
+        }
+    }
 
-	pub fn set_readiness(&self, ready: Ready) -> io::Result<()> {
-		if ready == Ready::readable() || ready == Ready::writable() {
-			self.wakeup()?;
-		}
+    pub fn set_readiness(&self, ready: Ready) -> io::Result<()> {
+        if ready == Ready::readable() || ready == Ready::writable() {
+            self.wakeup()?;
+        }
 
-		if ready == Ready::empty() {
-			self.finish()?;
-		}
+        if ready == Ready::empty() {
+            self.finish()?;
+        }
 
-		Ok(())
-	}
+        Ok(())
+    }
 }
 
 impl FromRawFd for Awakener {
-	unsafe fn from_raw_fd(fd: RawFd) -> Self {
-		Awakener {
-			inner: Arc::new(EventFd::from_raw_fd(fd))
-		}
-	}
+    unsafe fn from_raw_fd(fd: RawFd) -> Self {
+        Awakener {
+            inner: Arc::new(EventFd::from_raw_fd(fd))
+        }
+    }
 }
 
 impl AsRawFd for Awakener {

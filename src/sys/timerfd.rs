@@ -6,7 +6,6 @@ use std::convert::TryInto;
 
 use crate::epoll::{Epoll, Token, Ready, EpollOpt, Evented};
 
-use super::cvt;
 use super::fd::FileDesc;
 
 #[repr(i32)]
@@ -26,7 +25,7 @@ pub struct TimerFd {
     inner: FileDesc
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TimerSpec {
     pub interval: Duration,
     pub value: Duration
@@ -61,7 +60,7 @@ impl TimerFd {
     /// let timerfd = TimerFd::create(clock, flags);
     /// ```
     pub fn create(clock: Clock, flags: i32) -> io::Result<TimerFd> {
-        let timerfd = unsafe { cvt(libc::timerfd_create(clock as i32, flags))? };
+        let timerfd = syscall!(timerfd_create(clock as i32, flags))?;
         Ok(TimerFd {
             inner: FileDesc::new(timerfd)
         })
@@ -95,14 +94,12 @@ impl TimerFd {
 
         let flags: i32 = if abstime { 1 } else { 0 };
 
-        unsafe {
-            cvt(libc::timerfd_settime(
-                self.inner.raw(),
-                flags,
-                &new_value as *const libc::itimerspec,
-                &mut old_value as *mut libc::itimerspec
-            ))?;
-        }
+        syscall!(timerfd_settime(
+            self.inner.raw(),
+            flags,
+            &new_value as *const libc::itimerspec,
+            &mut old_value as *mut libc::itimerspec
+        ))?;
 
         Ok(TimerSpec {
             interval: timespec_to_duration(old_value.it_interval),
@@ -131,12 +128,11 @@ impl TimerFd {
     /// ```
     pub fn gettime(&self) -> io::Result<TimerSpec> {
         let mut itimerspec: libc::itimerspec = unsafe { mem::zeroed() };
-        unsafe {
-            cvt(libc::timerfd_gettime(
-                self.inner.raw(),
-                &mut itimerspec as *mut libc::itimerspec
-            ))?;
-        }
+
+        syscall!(timerfd_gettime(
+            self.inner.raw(),
+            &mut itimerspec as *mut libc::itimerspec
+        ))?;
 
         Ok(TimerSpec {
             interval: timespec_to_duration(itimerspec.it_interval),

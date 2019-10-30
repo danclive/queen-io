@@ -12,8 +12,6 @@ use libc::{EPOLLRDHUP, EPOLLONESHOT};
 
 use crate::epoll::{Token, Ready, EpollOpt, Event};
 
-use super::cvt;
-
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 
 pub struct Epoll {
@@ -23,9 +21,7 @@ pub struct Epoll {
 
 impl Epoll {
     pub fn new() -> io::Result<Epoll> {
-        let epfd = unsafe {
-            cvt(libc::epoll_create1(libc::EPOLL_CLOEXEC))?
-        };
+        let epfd = syscall!(epoll_create1(libc::EPOLL_CLOEXEC))?;
 
         let id = NEXT_ID.fetch_add(1, Ordering::Relaxed) + 1;
 
@@ -44,19 +40,16 @@ impl Epoll {
             .map(|to| cmp::min(millis(to), i32::MAX as u64) as i32)
             .unwrap_or(-1);
 
-        unsafe {
-            let cnt = cvt(libc::epoll_wait(
-                self.epfd,
-                evts.events.as_mut_ptr(),
-                evts.events.capacity() as i32,
-                timeout_ms    
-            ))?;
+        let cnt = syscall!(epoll_wait(
+            self.epfd,
+            evts.events.as_mut_ptr(),
+            evts.events.capacity() as i32,
+            timeout_ms    
+        ))?;
 
-            let cnt = cnt as usize;
-            evts.events.set_len(cnt);
+        unsafe { evts.events.set_len(cnt as usize) };
 
-            Ok(())
-        }
+        Ok(())
     }
 
     pub fn add(&self, fd: RawFd, token: Token, interests: Ready, opts: EpollOpt) -> io::Result<()> {
@@ -65,10 +58,9 @@ impl Epoll {
             u64: usize::from(token) as u64
         };
 
-        unsafe {
-            cvt(libc::epoll_ctl(self.epfd, libc::EPOLL_CTL_ADD, fd, &mut info))?;
-            Ok(())
-        }
+        syscall!(epoll_ctl(self.epfd, libc::EPOLL_CTL_ADD, fd, &mut info))?;
+
+        Ok(())
     }
 
     pub fn modify(&self, fd: RawFd, token: Token, interests: Ready, opts: EpollOpt) -> io::Result<()> {
@@ -76,11 +68,10 @@ impl Epoll {
             events: ioevent_to_epoll(interests, opts),
             u64: usize::from(token) as u64
         };
-
-        unsafe {
-            cvt(libc::epoll_ctl(self.epfd, libc::EPOLL_CTL_MOD, fd, &mut info))?;
-            Ok(())
-        }
+       
+        syscall!(epoll_ctl(self.epfd, libc::EPOLL_CTL_MOD, fd, &mut info))?;
+            
+        Ok(())
     }
 
     pub fn delete(&self, fd: RawFd) -> io::Result<()> {
@@ -89,10 +80,9 @@ impl Epoll {
             u64: 0,
         };
 
-        unsafe {
-            cvt(libc::epoll_ctl(self.epfd, libc::EPOLL_CTL_DEL, fd, &mut info))?;
-            Ok(())
-        }
+        syscall!(epoll_ctl(self.epfd, libc::EPOLL_CTL_DEL, fd, &mut info))?;
+
+        Ok(())
     }
 }
 

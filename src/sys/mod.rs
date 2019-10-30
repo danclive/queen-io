@@ -1,3 +1,15 @@
+// Helper macro to execute a system call that returns an `io::Result`.
+macro_rules! syscall {
+    ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
+        let res = unsafe { libc::$fn($($arg, )*) };
+        if res == -1 {
+            Err(io::Error::last_os_error())
+        } else {
+            Ok(res)
+        }
+    }};
+}
+
 use std::io::{self, ErrorKind};
 
 pub use self::epoll::{Epoll, Events};

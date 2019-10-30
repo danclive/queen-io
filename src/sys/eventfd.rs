@@ -1,12 +1,10 @@
 use std::os::unix::io::{RawFd, AsRawFd, FromRawFd, IntoRawFd};
-use std::mem;
 use std::io::{self, Read, Write};
 
 use libc;
 
 use crate::epoll::{Epoll, Token, Ready, EpollOpt, Evented};
 
-use super::cvt;
 use super::fd::FileDesc;
 
 pub const EFD_CLOEXEC: i32 = libc::EFD_CLOEXEC;
@@ -27,7 +25,7 @@ impl EventFd {
     }
 
     pub fn with_options(initval: u32, flags: i32) -> io::Result<EventFd> {
-        let eventfd = unsafe { cvt(libc::eventfd(initval, flags))? };
+        let eventfd = syscall!(eventfd(initval, flags))?;
         Ok(EventFd {
             inner: FileDesc::new(eventfd)
         })
@@ -36,12 +34,12 @@ impl EventFd {
     pub fn read(&self) -> io::Result<u64> {
         let mut buf = [0u8; 8];
         (&self.inner).read_exact(&mut buf)?;
-        let temp: u64 = unsafe { mem::transmute(buf) };
+        let temp: u64 = u64::from_ne_bytes(buf);
         Ok(temp)
     }
 
     pub fn write(&self, val: u64) -> io::Result<()> {
-        let buf: [u8; 8] = unsafe { mem::transmute(val) };
+        let buf: [u8; 8] = val.to_ne_bytes();
         (&self.inner).write_all(&buf)?;
         Ok(())
     }

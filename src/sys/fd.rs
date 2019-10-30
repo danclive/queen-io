@@ -5,7 +5,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use libc::{c_int, c_void, ssize_t};
 
-use super::cvt;
 use super::commom::AsInner;
 
 #[derive(Debug)]
@@ -32,20 +31,18 @@ impl FileDesc {
     }
 
     pub fn read(&self, buf: &mut [u8]) -> io::Result<usize> {
-        let ret = cvt(unsafe {
-            libc::read(self.fd,
+        let ret = syscall!(read(self.fd,
                        buf.as_mut_ptr() as *mut c_void,
                        cmp::min(buf.len(), max_len()))
-        })?;
+        )?;
         Ok(ret as usize)
     }
 
     pub fn read_vectored(&self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
-        let ret = cvt(unsafe {
-            libc::readv(self.fd,
+        let ret = syscall!(readv(self.fd,
                         bufs.as_ptr() as *const libc::iovec,
                         cmp::min(bufs.len(), c_int::max_value() as usize) as c_int)
-        })?;
+        )?;
         Ok(ret as usize)
     }
 
@@ -55,80 +52,54 @@ impl FileDesc {
     }
 
     pub fn read_at(&self, buf: &mut [u8], offset: u64) -> io::Result<usize> {
-        unsafe fn cvt_pread64(fd: c_int, buf: *mut c_void, count: usize, offset: i64)
-            -> io::Result<isize>
-        {
-            use libc::pread64;
-            cvt(pread64(fd, buf, count, offset))
-        }
-
-        unsafe {
-            cvt_pread64(self.fd,
+        syscall!(pread64(self.fd,
                         buf.as_mut_ptr() as *mut c_void,
                         cmp::min(buf.len(), max_len()),
-                        offset as i64)
-                .map(|n| n as usize)
-        }
+                        offset as i64))
+            .map(|n| n as usize)
     }
 
     pub fn write(&self, buf: &[u8]) -> io::Result<usize> {
-        let ret = cvt(unsafe {
-            libc::write(self.fd,
+        let ret = syscall!(write(self.fd,
                         buf.as_ptr() as *const c_void,
                         cmp::min(buf.len(), max_len()))
-        })?;
+        )?;
         Ok(ret as usize)
     }
 
     pub fn write_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
-        let ret = cvt(unsafe {
-            libc::writev(self.fd,
+        let ret = syscall!(writev(self.fd,
                          bufs.as_ptr() as *const libc::iovec,
                          cmp::min(bufs.len(), c_int::max_value() as usize) as c_int)
-        })?;
+        )?;
         Ok(ret as usize)
     }
 
     pub fn write_at(&self, buf: &[u8], offset: u64) -> io::Result<usize> {
-        unsafe fn cvt_pwrite64(fd: c_int, buf: *const c_void, count: usize, offset: i64)
-            -> io::Result<isize>
-        {
-            use libc::pwrite64;
-            cvt(pwrite64(fd, buf, count, offset))
-        }
-
-        unsafe {
-            cvt_pwrite64(self.fd,
+        syscall!(pwrite64(self.fd,
                          buf.as_ptr() as *const c_void,
                          cmp::min(buf.len(), max_len()),
-                         offset as i64)
+                         offset as i64))
                 .map(|n| n as usize)
-        }
     }
 
     pub fn get_cloexec(&self) -> io::Result<bool> {
-        unsafe {
-            Ok((cvt(libc::fcntl(self.fd, libc::F_GETFD))? & libc::FD_CLOEXEC) != 0)
-        }
+        Ok((syscall!(fcntl(self.fd, libc::F_GETFD))? & libc::FD_CLOEXEC) != 0)
     }
 
     pub fn set_cloexec(&self) -> io::Result<()> {
-        unsafe {
-            let previous = cvt(libc::fcntl(self.fd, libc::F_GETFD))?;
-            let new = previous | libc::FD_CLOEXEC;
-            if new != previous {
-                cvt(libc::fcntl(self.fd, libc::F_SETFD, new))?;
-            }
-            Ok(())
+        let previous = syscall!(fcntl(self.fd, libc::F_GETFD))?;
+        let new = previous | libc::FD_CLOEXEC;
+        if new != previous {
+            syscall!(fcntl(self.fd, libc::F_SETFD, new))?;
         }
+        Ok(())
     }
 
     pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
-        unsafe {
-            let v = nonblocking as c_int;
-            cvt(libc::ioctl(self.fd, libc::FIONBIO, &v))?;
-            Ok(())
-        }
+        let v = nonblocking as c_int;
+        syscall!(ioctl(self.fd, libc::FIONBIO, &v))?;
+        Ok(())
     }
 
     pub fn duplicate(&self) -> io::Result<FileDesc> {
@@ -157,7 +128,7 @@ impl FileDesc {
         static TRY_CLOEXEC: AtomicBool = AtomicBool::new(true);
         let fd = self.raw();
         if TRY_CLOEXEC.load(Ordering::Relaxed) {
-            match cvt(unsafe { libc::fcntl(fd, F_DUPFD_CLOEXEC, 0) }) {
+            match syscall!(fcntl(fd, F_DUPFD_CLOEXEC, 0)) {
                 // We *still* call the `set_cloexec` method as apparently some
                 // linux kernel at some point stopped setting CLOEXEC even
                 // though it reported doing so on F_DUPFD_CLOEXEC.
@@ -170,7 +141,7 @@ impl FileDesc {
                 Err(e) => return Err(e),
             }
         }
-        cvt(unsafe { libc::fcntl(fd, libc::F_DUPFD, 0) }).and_then(make_filedesc)
+        syscall!(fcntl(fd, libc::F_DUPFD, 0)).and_then(make_filedesc)
     }
 }
 
@@ -206,6 +177,6 @@ impl Drop for FileDesc {
         // the file descriptor was closed or not, and if we retried (for
         // something like EINTR), we might close another valid file descriptor
         // opened after we closed ours.
-        let _ = unsafe { libc::close(self.fd) };
+        let _ = syscall!(close(self.fd));
     }
 }
