@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, Condvar};
+use std::time::Duration;
 
 #[derive(Clone, Debug)]
 pub struct BlockQueue<T> where T: Send {
@@ -44,5 +45,45 @@ impl<T> BlockQueue<T> where T: Send {
     pub fn try_pop(&self) -> Option<T> {
         let mut queue = self.inner.queue.lock().unwrap();
         queue.pop_front()
+    }
+
+    pub fn pop_timeout(&self, timeout: Duration) -> Option<T> {
+        let mut queue = self.inner.queue.lock().unwrap();
+
+        loop {
+            if let Some(elem) = queue.pop_front() {
+                return Some(elem)
+            }
+
+            let result = self.inner.condvar.wait_timeout(queue, timeout).unwrap();
+            
+            if result.1.timed_out() {
+                return None
+            }
+
+            queue = result.0;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::BlockQueue;
+    use std::thread;
+    use std::time::Duration;
+
+    #[test]
+    fn timeout() {
+        let queue = BlockQueue::<i32>::with_capacity(4);
+
+        let queue2 = queue.clone();
+
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(20));
+            queue2.push(1);
+        });
+
+        assert!(queue.pop_timeout(Duration::from_millis(10)).is_none());
+        assert!(queue.pop_timeout(Duration::from_millis(20)).unwrap() == 1);
     }
 }
