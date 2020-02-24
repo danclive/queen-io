@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, Condvar};
 use std::time::Duration;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct BlockQueue<T> where T: Send {
     inner: Arc<BlockQueueInner<T>>
 }
@@ -62,6 +62,14 @@ impl<T> BlockQueue<T> where T: Send {
             }
 
             queue = result.0;
+        }
+    }
+}
+
+impl<T> Clone for BlockQueue<T> where T: Send {
+    fn clone(&self) -> BlockQueue<T> {
+        BlockQueue {
+            inner: self.inner.clone()
         }
     }
 }

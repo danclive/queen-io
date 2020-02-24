@@ -62,7 +62,7 @@ impl TimerFd {
     pub fn create(clock: Clock, flags: i32) -> io::Result<TimerFd> {
         let timerfd = syscall!(timerfd_create(clock as i32, flags))?;
         Ok(TimerFd {
-            inner: FileDesc::new(timerfd)
+            inner: unsafe { FileDesc::new(timerfd) }
         })
     }
 
@@ -95,7 +95,7 @@ impl TimerFd {
         let flags: i32 = if abstime { 1 } else { 0 };
 
         syscall!(timerfd_settime(
-            self.inner.raw(),
+            self.inner.as_raw_fd(),
             flags,
             &new_value as *const libc::itimerspec,
             &mut old_value as *mut libc::itimerspec
@@ -130,7 +130,7 @@ impl TimerFd {
         let mut itimerspec: libc::itimerspec = unsafe { mem::zeroed() };
 
         syscall!(timerfd_gettime(
-            self.inner.raw(),
+            self.inner.as_raw_fd(),
             &mut itimerspec as *mut libc::itimerspec
         ))?;
 
@@ -175,13 +175,13 @@ impl FromRawFd for TimerFd {
 
 impl IntoRawFd for TimerFd {
     fn into_raw_fd(self) -> RawFd {
-        self.inner.into_raw()
+        self.inner.into_raw_fd()
     }
 }
 
 impl AsRawFd for TimerFd {
     fn as_raw_fd(&self) -> RawFd {
-        self.inner.raw()
+        self.inner.as_raw_fd()
     }
 }
 

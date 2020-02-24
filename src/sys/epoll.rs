@@ -36,15 +36,15 @@ impl Epoll {
     }
 
     pub fn wait(&self, evts: &mut Events, timeout: Option<Duration>) -> io::Result<()> {
-        let timeout_ms = timeout
-            .map(|to| cmp::min(millis(to), i32::MAX as u64) as i32)
+        let timeout = timeout
+            .map(|to| cmp::min(to.as_millis(), libc::c_int::max_value() as u128) as libc::c_int)
             .unwrap_or(-1);
 
         let cnt = syscall!(epoll_wait(
             self.epfd,
             evts.events.as_mut_ptr(),
             evts.events.capacity() as i32,
-            timeout_ms    
+            timeout
         ))?;
 
         unsafe { evts.events.set_len(cnt as usize) };
@@ -184,12 +184,4 @@ impl Events {
             Event::new(kind, Token(token as usize))
         })
     }
-}
-
-const NANOS_PER_MILLI: u32 = 1_000_000;
-const MILLIS_PER_SEC: u64 = 1_000;
-
-pub fn millis(duration: Duration) -> u64 {
-    let millis = (duration.subsec_nanos() + NANOS_PER_MILLI - 1) / NANOS_PER_MILLI;
-    duration.as_secs().saturating_mul(MILLIS_PER_SEC).saturating_add(u64::from(millis))
 }

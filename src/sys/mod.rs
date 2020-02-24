@@ -19,7 +19,6 @@ pub mod epoll;
 pub mod timerfd;
 pub mod eventfd;
 pub mod socket;
-pub mod commom;
 
 pub trait IsMinusOne {
     fn is_minus_one(&self) -> bool;

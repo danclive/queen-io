@@ -27,7 +27,7 @@ impl EventFd {
     pub fn with_options(initval: u32, flags: i32) -> io::Result<EventFd> {
         let eventfd = syscall!(eventfd(initval, flags))?;
         Ok(EventFd {
-            inner: FileDesc::new(eventfd)
+            inner: unsafe { FileDesc::new(eventfd) }
         })
     }
 
@@ -55,13 +55,13 @@ impl FromRawFd for EventFd {
 
 impl IntoRawFd for EventFd {
     fn into_raw_fd(self) -> RawFd {
-        self.inner.into_raw()
+        self.inner.into_raw_fd()
     }
 }
 
 impl AsRawFd for EventFd {
     fn as_raw_fd(&self) -> RawFd {
-        self.inner.raw()
+        self.inner.as_raw_fd()
     }
 }
 
