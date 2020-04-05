@@ -1,7 +1,5 @@
 use std::sync::{mpsc, Arc};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::error;
-use std::any::Any;
 use std::fmt;
 use std::io;
 
@@ -283,25 +281,6 @@ impl<T> From<mpsc::SendError<T>> for TrySendError<T> {
 impl<T> From<io::Error> for TrySendError<T> {
     fn from(src: io::Error) -> TrySendError<T> {
         TrySendError::Io(src)
-    }
-}
-
-impl<T: Any> error::Error for SendError<T> {
-    fn description(&self) -> &str {
-        match *self {
-            SendError::Io(ref io_err) => io_err.description(),
-            SendError::Disconnected(..) => "Disconnected",
-        }
-    }
-}
-
-impl<T: Any> error::Error for TrySendError<T> {
-    fn description(&self) -> &str {
-        match *self {
-            TrySendError::Io(ref io_err) => io_err.description(),
-            TrySendError::Full(..) => "Full",
-            TrySendError::Disconnected(..) => "Disconnected",
-        }
     }
 }
 

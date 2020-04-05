@@ -81,26 +81,7 @@ impl Events {
     #[inline]
     pub fn get(&self, idx: usize) -> Option<Event> {
         self.events.get(idx).map(|event| {
-            let revents = event.revents;
-            let mut kind = Ready::empty();
-
-            if (revents & POLLIN) != 0 || (revents & POLLPRI) != 0 {
-                kind = kind | Ready::readable();
-            }
-
-            if (revents & POLLOUT) != 0 {
-                kind = kind | Ready::writable();
-            }
-
-            if (revents & POLLERR) != 0 {
-                kind = kind | Ready::error();
-            }
-
-            if (revents & POLLHUP) != 0 {
-                kind = kind | Ready::hup();
-            }
-
-            Event::new(event.fd, kind)
+            Event::new(event.fd, poll_to_ioevent(event.revents))
         })
     }
 
@@ -173,7 +154,7 @@ impl IntoIterator for Events {
     }
 }
 
-fn ioevent_to_poll(interest: Ready) -> i16 {
+pub(crate) fn ioevent_to_poll(interest: Ready) -> i16 {
     let mut kind = 0;
 
     if interest.is_readable() {
@@ -186,6 +167,28 @@ fn ioevent_to_poll(interest: Ready) -> i16 {
 
     if interest.is_hup() {
         kind |= POLLHUP;
+    }
+
+    kind
+}
+
+pub(crate) fn poll_to_ioevent(revents: i16) -> Ready {
+    let mut kind = Ready::empty();
+
+    if (revents & POLLIN) != 0 || (revents & POLLPRI) != 0 {
+        kind = kind | Ready::readable();
+    }
+
+    if (revents & POLLOUT) != 0 {
+        kind = kind | Ready::writable();
+    }
+
+    if (revents & POLLERR) != 0 {
+        kind = kind | Ready::error();
+    }
+
+    if (revents & POLLHUP) != 0 {
+        kind = kind | Ready::hup();
     }
 
     kind
