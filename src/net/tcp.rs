@@ -25,12 +25,6 @@ impl TcpStream {
         Ok(TcpStream::new(stream)?)
     }
 
-    pub fn connect_timeout(addr: &SocketAddr, timeout: Duration) -> io::Result<TcpStream> {
-        let stream = net::TcpStream::connect_timeout(addr, timeout)?;
-
-        Ok(TcpStream::new(stream)?)
-    }
-
     pub fn new(stream: net::TcpStream) -> io::Result<TcpStream> {
         stream.set_nonblocking(true)?;
 
