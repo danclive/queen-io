@@ -3,11 +3,13 @@ use std::time::Duration;
 use std::mem;
 use std::io::{self, Read};
 use std::convert::TryInto;
+use std::fmt;
 
 use crate::epoll::{Epoll, Token, Ready, EpollOpt, Evented};
 
 use super::fd::FileDesc;
 
+#[derive(Clone, Copy)]
 #[repr(i32)]
 pub enum Clock {
     Realtime = libc::CLOCK_REALTIME,
@@ -17,8 +19,58 @@ pub enum Clock {
     BoottimeAlarm = libc::CLOCK_BOOTTIME_ALARM
 }
 
+impl Clock {
+    pub fn clock_name(&self) -> &'static str {
+        match self {
+            Clock::Realtime       => "CLOCK_REALTIME",
+            Clock::RealtimeAlarm  => "CLOCK_REALTIME_ALARM",
+            Clock::Monotonic      => "CLOCK_MONOTONIC",
+            Clock::Boottime       => "CLOCK_BOOTTIME",
+            Clock::BoottimeAlarm  => "CLOCK_BOOTTIME_ALARM",
+        }
+    }
+}
+
+impl fmt::Display for Clock {
+    fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.clock_name())
+    }
+}
+
+impl fmt::Debug for Clock {
+    fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} ({})", self.clone() as i32, self.clock_name())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SetTimeFlags {
+    /// Flags to `timerfd_settime(2)`.
+    ///
+    /// The default is zero, i. e. all bits unset.
+    Default,
+
+    /// Interpret new_value.it_value as an absolute value on the timer's clock. The timer will
+    /// expire when the value of the timer's clock reaches the value specified in
+    /// new_value.it_value.
+    Abstime,
+
+    /// If this flag is specified along with TFD_TIMER_ABSTIME and the clock for this timer is
+    /// CLOCK_REALTIME or CLOCK_REALTIME_ALARM, then mark this timer as cancelable if the
+    /// real-time clock undergoes a discontinuous change (settimeofday(2), clock_settime(2),
+    /// or similar). When such changes occur, a current or future read(2) from the file
+    /// descriptor will fail with the error ECANCELED.
+    ///
+    /// `TFD_TIMER_CANCEL_ON_SET` is useless without `TFD_TIMER_ABSTIME` set, cf. `fs/timerfd.c`.
+    /// Thus `TimerCancelOnSet`` implies `Abstime`.
+    TimerCancelOnSet,
+}
+
 pub const TFD_CLOEXEC: i32 = libc::TFD_CLOEXEC;
 pub const TFD_NONBLOCK: i32 = libc::TFD_NONBLOCK;
+
+const TFD_TIMER_ABSTIME: i32 = libc::TFD_TIMER_ABSTIME;
+const TFD_TIMER_CANCEL_ON_SET: i32 = 0o0000002;
 
 #[derive(Debug)]
 pub struct TimerFd {
@@ -84,7 +136,7 @@ impl TimerFd {
     ///
     /// let old_value = timerfd.settime(false, timerspec);
     /// ```
-    pub fn settime(&self, abstime: bool, value: TimerSpec) -> io::Result<TimerSpec> {
+    pub fn settime(&self, value: TimerSpec, flags: SetTimeFlags) -> io::Result<TimerSpec> {
         let new_value = libc::itimerspec {
             it_interval: duration_to_timespec(value.interval),
             it_value: duration_to_timespec(value.value)
@@ -92,7 +144,11 @@ impl TimerFd {
 
         let mut old_value: libc::itimerspec = unsafe { mem::zeroed() };
 
-        let flags: i32 = if abstime { 1 } else { 0 };
+        let flags = match flags {
+            SetTimeFlags::Default => 0,
+            SetTimeFlags::Abstime => TFD_TIMER_ABSTIME,
+            SetTimeFlags::TimerCancelOnSet => TFD_TIMER_ABSTIME | TFD_TIMER_CANCEL_ON_SET,
+        };
 
         syscall!(timerfd_settime(
             self.inner.as_raw_fd(),
