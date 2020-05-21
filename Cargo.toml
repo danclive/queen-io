@@ -1,6 +1,6 @@
 [package]
 name          = "queen-io"
-version       = "0.4.8"
+version       = "0.5"
 license       = "MIT"
 authors       = ["danc <dangcheng@hotmail.com>"]
 description   = "I/O library for Rust"
