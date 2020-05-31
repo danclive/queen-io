@@ -5,6 +5,7 @@ Queen-io is a I/O library for Rust.
 [![crates.io](https://meritbadge.herokuapp.com/queen-io)](https://crates.io/crates/queen-io)
 [![Build Status](https://travis-ci.org/danclive/queen-io.svg?branch=master)](https://travis-ci.org/danclive/queen-io)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Released API docs](https://docs.rs/queen-io/badge.svg)](https://docs.rs/queen-io)
 
 ## Document
 
