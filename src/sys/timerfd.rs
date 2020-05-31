@@ -125,7 +125,7 @@ impl TimerFd {
     ///
     /// ```
     /// use std::time::Duration;
-    /// use queen_io::sys::timerfd::{TimerFd, TimerSpec};
+    /// use queen_io::sys::timerfd::{TimerFd, TimerSpec, SetTimeFlags};
     ///
     /// let timerfd = TimerFd::new().unwrap();
     ///
@@ -134,7 +134,7 @@ impl TimerFd {
     ///     value: Duration::new(10, 0)
     /// };
     ///
-    /// let old_value = timerfd.settime(false, timerspec);
+    /// let old_value = timerfd.settime(timerspec, SetTimeFlags::Default);
     /// ```
     pub fn settime(&self, value: TimerSpec, flags: SetTimeFlags) -> io::Result<TimerSpec> {
         let new_value = libc::itimerspec {
@@ -169,7 +169,7 @@ impl TimerFd {
     ///
     /// ```
     /// use std::time::Duration;
-    /// use queen_io::sys::timerfd::{TimerFd, TimerSpec};
+    /// use queen_io::sys::timerfd::{TimerFd, TimerSpec, SetTimeFlags};
     ///
     /// let timerfd = TimerFd::new().unwrap();
     ///
@@ -178,7 +178,7 @@ impl TimerFd {
     ///     value: Duration::new(10, 0)
     /// };
     ///
-    /// let old_value = timerfd.settime(false, timerspec);
+    /// let old_value = timerfd.settime(timerspec, SetTimeFlags::Default);
     ///
     /// let value = timerfd.gettime();
     /// ```
