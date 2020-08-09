@@ -1,10 +1,7 @@
-pub use awakener::Awakener;
-pub use net::{tcp, unix};
-
 pub mod sys;
 pub mod epoll;
 pub mod poll;
-mod net;
-mod awakener;
+pub mod net;
+pub mod waker;
 pub mod plus;
 pub mod queue;

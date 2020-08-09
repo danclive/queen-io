@@ -5,7 +5,7 @@ use std::io::{self, Read};
 use std::convert::TryInto;
 use std::fmt;
 
-use crate::epoll::{Epoll, Token, Ready, EpollOpt, Evented};
+use crate::epoll::{Epoll, Token, Ready, EpollOpt, Source};
 
 use super::fd::FileDesc;
 
@@ -241,7 +241,7 @@ impl AsRawFd for TimerFd {
     }
 }
 
-impl Evented for TimerFd {
+impl Source for TimerFd {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
         epoll.add(&self.as_raw_fd(), token, interest, opts)
     }

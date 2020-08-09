@@ -3,7 +3,7 @@ use std::io::{self, Read, Write};
 
 use libc;
 
-use crate::epoll::{Epoll, Token, Ready, EpollOpt, Evented};
+use crate::epoll::{Epoll, Token, Ready, EpollOpt, Source};
 
 use super::fd::FileDesc;
 
@@ -65,7 +65,7 @@ impl AsRawFd for EventFd {
     }
 }
 
-impl Evented for EventFd {
+impl Source for EventFd {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
         epoll.add(&self.as_raw_fd(), token, interest, opts)
     }

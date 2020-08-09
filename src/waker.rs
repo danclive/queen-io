@@ -3,18 +3,18 @@ use std::os::unix::io::{RawFd, AsRawFd, FromRawFd};
 use std::io;
 
 use crate::sys::eventfd::EventFd;
-use crate::epoll::{Ready, Evented, Epoll, Token, EpollOpt};
+use crate::epoll::{Ready, Source, Epoll, Token, EpollOpt};
 
 #[derive(Debug, Clone)]
-pub struct Awakener {
+pub struct Waker {
     inner: Arc<EventFd>
 }
 
-impl Awakener {
-    pub fn new() -> io::Result<Awakener> {
+impl Waker {
+    pub fn new() -> io::Result<Waker> {
         let eventfd = EventFd::new()?;
 
-        Ok(Awakener {
+        Ok(Waker {
             inner: Arc::new(eventfd)
         })
     }
@@ -58,21 +58,21 @@ impl Awakener {
     }
 }
 
-impl FromRawFd for Awakener {
+impl FromRawFd for Waker {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
-        Awakener {
+        Waker {
             inner: Arc::new(EventFd::from_raw_fd(fd))
         }
     }
 }
 
-impl AsRawFd for Awakener {
+impl AsRawFd for Waker {
     fn as_raw_fd(&self) -> RawFd {
         self.inner.as_raw_fd()
     }
 }
 
-impl Evented for Awakener {
+impl Source for Waker {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
         self.inner.add(epoll, token, interest, opts)
     }

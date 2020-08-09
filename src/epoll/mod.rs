@@ -8,13 +8,13 @@ use crate::sys;
 
 pub use epoll_opt::EpollOpt;
 pub use event::{Event, Events, Iter, IntoIter};
-pub use evented::Evented;
+pub use source::Source;
 pub use ready::Ready;
 pub use token::Token;
 
 mod epoll_opt;
 mod event;
-mod evented;
+mod source;
 mod ready;
 mod token;
 
@@ -33,30 +33,30 @@ impl Epoll {
         Ok(events.len())
     }
 
-    pub fn add<E: ?Sized>(&self, handle: &E, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>
-        where E: Evented
+    pub fn add<S>(&self, source: &S, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>
+        where S: Source + ?Sized
     {
         validate_args(token, interest)?;
 
-        handle.add(self, token, interest, opts)?;
+        source.add(self, token, interest, opts)?;
 
         Ok(())
     }
 
-    pub fn modify<E: ?Sized>(&self, handle: &E, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>
-        where E: Evented
+    pub fn modify<S>(&self, source: &S, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>
+        where S: Source + ?Sized
     {
         validate_args(token, interest)?;
 
-        handle.modify(self, token, interest, opts)?;
+        source.modify(self, token, interest, opts)?;
 
         Ok(())
     }
 
-    pub fn delete<E: ?Sized>(&self, handle: &E) -> io::Result<()>
-        where E: Evented
+    pub fn delete<S>(&self, source: &S) -> io::Result<()>
+        where S: Source + ?Sized
     {
-        handle.delete(self)?;
+        source.delete(self)?;
 
         Ok(())
     }

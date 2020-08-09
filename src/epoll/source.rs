@@ -3,7 +3,7 @@ use std::io;
 
 use super::{Epoll, Token, Ready, EpollOpt};
 
-pub trait Evented {
+pub trait Source {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>;
 
     fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>;
@@ -11,7 +11,7 @@ pub trait Evented {
     fn delete(&self, epoll: &Epoll) -> io::Result<()>;
 }
 
-impl Evented for RawFd {
+impl Source for RawFd {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
         epoll.0.add(*self, token, interest, opts)
     }

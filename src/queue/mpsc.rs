@@ -5,8 +5,8 @@ use std::os::unix::io::{AsRawFd, RawFd};
 use std::io;
 
 use crate::plus::mpsc_queue;
-use crate::Awakener;
-use crate::epoll::{Ready, Evented, Epoll, Token, EpollOpt};
+use crate::waker::Waker;
+use crate::epoll::{Ready, Source, Epoll, Token, EpollOpt};
 
 pub struct Queue<T: Send> {
     inner: Arc<Inner<T>>
@@ -15,7 +15,7 @@ pub struct Queue<T: Send> {
 struct Inner<T> {
     queue: mpsc_queue::Queue<T>,
     pending: AtomicUsize,
-    awakener: Awakener
+    waker: Waker
 }
 
 impl <T: Send> Queue<T> {
@@ -24,7 +24,7 @@ impl <T: Send> Queue<T> {
             inner: Arc::new(Inner {
                 queue: mpsc_queue::Queue::new(),
                 pending: AtomicUsize::new(0),
-                awakener: Awakener::new()?
+                waker: Waker::new()?
             })
         })
     }
@@ -32,7 +32,7 @@ impl <T: Send> Queue<T> {
     fn inc(&self) -> io::Result<()> {
         let cnt = self.inner.pending.fetch_add(1, Acquire);
         if 0 == cnt {
-            self.inner.awakener.set_readiness(Ready::readable())?;
+            self.inner.waker.set_readiness(Ready::readable())?;
         }
         Ok(())
     }
@@ -41,13 +41,13 @@ impl <T: Send> Queue<T> {
         let first = self.inner.pending.load(Acquire);
 
         if first == 1 {
-            self.inner.awakener.set_readiness(Ready::empty())?;
+            self.inner.waker.set_readiness(Ready::empty())?;
         }
 
         let second = self.inner.pending.fetch_sub(1, AcqRel);
 
         if first == 1 && second > 1 {
-            self.inner.awakener.set_readiness(Ready::readable())?;
+            self.inner.waker.set_readiness(Ready::readable())?;
         }
 
         Ok(())
@@ -82,26 +82,26 @@ impl<T: Send> Clone for Queue<T> {
 
 impl<T: Send> AsRawFd for Queue<T> {
     fn as_raw_fd(&self) -> RawFd {
-        self.inner.awakener.as_raw_fd()
+        self.inner.waker.as_raw_fd()
     }
 }
 
-impl<T: Send> Evented for Queue<T> {
+impl<T: Send> Source for Queue<T> {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
-        self.inner.awakener.add(epoll, token, interest, opts)?;
+        self.inner.waker.add(epoll, token, interest, opts)?;
 
         if self.inner.pending.load(Relaxed) > 0 {
-            self.inner.awakener.set_readiness(Ready::readable())?;
+            self.inner.waker.set_readiness(Ready::readable())?;
         }
 
         Ok(())
     }
 
     fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
-        self.inner.awakener.modify(epoll, token, interest, opts)
+        self.inner.waker.modify(epoll, token, interest, opts)
     }
 
     fn delete(&self, epoll: &Epoll) -> io::Result<()> {
-        self.inner.awakener.delete(epoll)
+        self.inner.waker.delete(epoll)
     }
 }

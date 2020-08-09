@@ -4,7 +4,7 @@ use std::net::{self, ToSocketAddrs, SocketAddr};
 use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
 use std::io;
 
-use crate::epoll::{SelectorId, Ready, Evented, Epoll, Token, EpollOpt};
+use crate::epoll::{SelectorId, Ready, Source, Epoll, Token, EpollOpt};
 
 #[derive(Debug)]
 pub struct TcpStream {
@@ -145,7 +145,7 @@ impl<'a> Write for &'a TcpStream {
     }
 }
 
-impl Evented for TcpStream {
+impl Source for TcpStream {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
         self.selector_id.associate_selector(epoll)?;
         epoll.add(&self.as_raw_fd(), token, interest, opts)
@@ -229,7 +229,7 @@ impl TcpListener {
     }
 }
 
-impl Evented for TcpListener {
+impl Source for TcpListener {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
         self.selector_id.associate_selector(epoll)?;
         epoll.add(&self.as_raw_fd(), token, interest, opts)

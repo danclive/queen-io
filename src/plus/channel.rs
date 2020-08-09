@@ -3,8 +3,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::fmt;
 use std::io;
 
-use crate::Awakener;
-use crate::epoll::{Ready, Evented, Epoll, Token, EpollOpt};
+use crate::waker::Waker;
+use crate::epoll::{Ready, Source, Epoll, Token, EpollOpt};
 
 pub fn channel<T>() -> io::Result<(Sender<T>, Receiver<T>)> {
     let (tx_ctl, rx_ctl) = ctl_pair()?;
@@ -41,12 +41,12 @@ pub fn sync_channel<T>(bound: usize) -> io::Result<(SyncSender<T>, Receiver<T>)>
 }
 
 pub fn ctl_pair() -> io::Result<(SenderCtl, ReceiverCtl)> {
-    let awakener = Awakener::new()?;
+    let waker = Waker::new()?;
 
     let inner = Arc::new(Inner {
         pending: AtomicUsize::new(0),
         senders: AtomicUsize::new(1),
-        awakener
+        waker
     });
 
     let tx = SenderCtl {
@@ -92,7 +92,7 @@ pub struct ReceiverCtl {
 struct Inner {
     pending: AtomicUsize,
     senders: AtomicUsize,
-    awakener: Awakener
+    waker: Waker
 }
 
 pub enum SendError<T> {
@@ -160,7 +160,7 @@ impl<T> Receiver<T> {
     }
 }
 
-impl<T> Evented for Receiver<T> {
+impl<T> Source for Receiver<T> {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
         self.ctl.add(epoll, token, interest, opts)
     }
@@ -179,7 +179,7 @@ impl SenderCtl {
         let cnt = self.inner.pending.fetch_add(1, Ordering::Acquire);
 
         if 0 == cnt {
-            self.inner.awakener.set_readiness(Ready::readable())?;
+            self.inner.waker.set_readiness(Ready::readable())?;
         }
 
         Ok(())
@@ -206,36 +206,36 @@ impl ReceiverCtl {
         let first = self.inner.pending.load(Ordering::Acquire);
 
         if first == 1 {
-            self.inner.awakener.set_readiness(Ready::empty())?;
+            self.inner.waker.set_readiness(Ready::empty())?;
         }
 
         let second = self.inner.pending.fetch_sub(1, Ordering::AcqRel);
 
         if first == 1 && second > 1 {
-            self.inner.awakener.set_readiness(Ready::readable())?;
+            self.inner.waker.set_readiness(Ready::readable())?;
         }
 
         Ok(())
     }
 }
 
-impl Evented for ReceiverCtl {
+impl Source for ReceiverCtl {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
-        self.inner.awakener.add(epoll, token, interest, opts)?;
+        self.inner.waker.add(epoll, token, interest, opts)?;
 
         if self.inner.pending.load(Ordering::Relaxed) > 0 {
-            self.inner.awakener.set_readiness(Ready::readable())?;
+            self.inner.waker.set_readiness(Ready::readable())?;
         }
 
         Ok(())
     }
 
     fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
-        self.inner.awakener.modify(epoll, token, interest, opts)
+        self.inner.waker.modify(epoll, token, interest, opts)
     }
 
     fn delete(&self, epoll: &Epoll) -> io::Result<()> {
-        self.inner.awakener.delete(epoll)
+        self.inner.waker.delete(epoll)
     }
 }
 

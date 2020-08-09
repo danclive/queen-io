@@ -1,4 +1,5 @@
 pub mod channel;
+pub mod slab;
 pub mod block_queue;
 pub mod mpsc_queue;
 pub mod mpmc_queue;

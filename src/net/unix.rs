@@ -6,7 +6,7 @@ use std::os::unix::net::{self, SocketAddr};
 use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
 use std::io;
 
-use crate::epoll::{SelectorId, Ready, Evented, Epoll, Token, EpollOpt};
+use crate::epoll::{SelectorId, Ready, Source, Epoll, Token, EpollOpt};
 
 #[derive(Debug)]
 pub struct UnixStream {
@@ -120,7 +120,7 @@ impl<'a> Write for &'a UnixStream {
     }
 }
 
-impl Evented for UnixStream {
+impl Source for UnixStream {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
         self.selector_id.associate_selector(epoll)?;
         epoll.add(&self.as_raw_fd(), token, interest, opts)
@@ -200,7 +200,7 @@ impl UnixListener {
     }
 }
 
-impl Evented for UnixListener {
+impl Source for UnixListener {
     fn add(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
         self.selector_id.associate_selector(epoll)?;
         epoll.add(&self.as_raw_fd(), token, interest, opts)
