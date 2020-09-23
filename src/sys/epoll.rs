@@ -68,9 +68,9 @@ impl Epoll {
             events: ioevent_to_epoll(interests, opts),
             u64: usize::from(token) as u64
         };
-       
+
         syscall!(epoll_ctl(self.epfd, libc::EPOLL_CTL_MOD, fd, &mut info))?;
-            
+
         Ok(())
     }
 

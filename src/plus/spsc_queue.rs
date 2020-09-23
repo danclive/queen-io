@@ -5,6 +5,7 @@
 //! enforces the semantics that there is one pusher and one popper.
 
 // http://www.1024cores.net/home/lock-free-algorithms/queues/unbounded-spsc-queue
+// This queue is copy pasted from rust stdlib.
 
 use std::ptr;
 use std::cell::UnsafeCell;
