@@ -118,7 +118,6 @@ impl TimerFd {
         })
     }
 
-    // https://www.cnblogs.com/mickole/p/3261879.html
     /// Set time to timerfd
     ///
     /// # Example
