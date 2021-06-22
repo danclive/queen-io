@@ -152,8 +152,8 @@ impl TimerFd {
         syscall!(timerfd_settime(
             self.inner.as_raw_fd(),
             flags,
-            &new_value as *const libc::itimerspec,
-            &mut old_value as *mut libc::itimerspec
+            &new_value,
+            &mut old_value
         ))?;
 
         Ok(TimerSpec {
@@ -186,7 +186,7 @@ impl TimerFd {
 
         syscall!(timerfd_gettime(
             self.inner.as_raw_fd(),
-            &mut itimerspec as *mut libc::itimerspec
+            &mut itimerspec
         ))?;
 
         Ok(TimerSpec {
