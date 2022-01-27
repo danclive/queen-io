@@ -4,25 +4,36 @@ use std::sync::atomic::Ordering::{Relaxed, Acquire, AcqRel};
 use std::os::unix::io::{AsRawFd, RawFd};
 use std::io;
 
-use crate::plus::spsc_queue;
+use concurrent_queue::{ConcurrentQueue, PopError, PushError};
+
 use crate::waker::Waker;
 use crate::epoll::{Ready, Source, Epoll, Token, EpollOpt};
 
-pub struct Queue<T: Send> {
+pub struct Queue<T> {
     inner: Arc<Inner<T>>
 }
 
 struct Inner<T> {
-    queue: spsc_queue::Queue<T>,
+    queue: ConcurrentQueue<T>,
     pending: AtomicUsize,
     waker: Waker
 }
 
 impl <T: Send> Queue<T> {
-    pub fn with_cache(bound: usize) -> io::Result<Queue<T>> {
+    pub fn bounded(cap: usize) -> io::Result<Queue<T>> {
         Ok(Queue {
             inner: Arc::new(Inner {
-                queue: unsafe { spsc_queue::Queue::with_additions(bound, (), ()) },
+                queue: ConcurrentQueue::bounded(cap),
+                pending: AtomicUsize::new(0),
+                waker: Waker::new()?
+            })
+        })
+    }
+
+    pub fn unbounded() -> io::Result<Queue<T>> {
+        Ok(Queue {
+            inner: Arc::new(Inner {
+                queue: ConcurrentQueue::unbounded(),
                 pending: AtomicUsize::new(0),
                 waker: Waker::new()?
             })
@@ -54,13 +65,12 @@ impl <T: Send> Queue<T> {
         Ok(())
     }
 
-    pub fn push(&self, value: T) {
-        self.inner.queue.push(value);
-        let _ = self.inc();
+    pub fn push(&self, value: T) -> Result<(), PushError<T>>{
+        self.inner.queue.push(value).map(|_| { let _ = self.inc(); })
     }
 
-    pub fn pop(&self) -> Option<T> {
-        self.inner.queue.pop().and_then(|res| {let _ = self.dec(); Some(res)})
+    pub fn pop(&self) -> Result<T, PopError> {
+        self.inner.queue.pop().map(|res| {let _ = self.dec(); res})
     }
 
     pub fn pending(&self) -> usize {

@@ -1,6 +1,6 @@
 [package]
 name          = "queen-io"
-version       = "0.6.1"
+version       = "0.7.0"
 license       = "MIT"
 authors       = ["danc <dangcheng@hotmail.com>"]
 description   = "I/O library for Rust"
@@ -16,8 +16,10 @@ exclude       = [
   "test/**/*",
 ]
 
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-libc     = "0.2"
-indexmap = "1.6"
+libc             = "0.2"
+indexmap         = "1.8"
+slab             = "0.4"
+concurrent-queue = "1.2"

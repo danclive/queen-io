@@ -85,7 +85,7 @@ pub struct TimerSpec {
 
 impl TimerFd {
     /// Create a timerfd with clickid: CLOCK_REALTIME and flags: TFD_CLOEXEC | TFD_NONBLOCK
-    /// http://man7.org/linux/man-pages/man2/timerfd_create.2.html
+    /// view: `<http://man7.org/linux/man-pages/man2/timerfd_create.2.html>`
     ///
     /// # Example
     ///

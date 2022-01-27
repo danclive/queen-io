@@ -18,7 +18,7 @@ pub struct EventFd {
 
 impl EventFd {
     /// Create an eventfd with initval: 0 and flags: EFD_CLOEXEC | EFD_NONBLOCK
-    /// view: http://man7.org/linux/man-pages/man2/eventfd.2.html
+    /// view: `<http://man7.org/linux/man-pages/man2/eventfd.2.html>`
     pub fn new() -> io::Result<EventFd> {
         let flags = EFD_CLOEXEC | EFD_NONBLOCK;
         EventFd::with_options(0, flags)
@@ -29,6 +29,10 @@ impl EventFd {
         Ok(EventFd {
             inner: unsafe { FileDesc::new(eventfd) }
         })
+    }
+
+    pub fn try_clone(&self) -> io::Result<EventFd> {
+        self.inner.try_clone().map(|fd| EventFd { inner: fd })
     }
 
     pub fn read(&self) -> io::Result<u64> {
