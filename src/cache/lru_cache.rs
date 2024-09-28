@@ -1,4 +1,4 @@
-use std::cmp::{PartialEq, Eq};
+use std::cmp::{Eq, PartialEq};
 use std::collections::HashMap;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -6,7 +6,9 @@ use std::mem;
 use std::ops::Drop;
 use std::ptr;
 
-struct KeyRef<K> { k: *const K }
+struct KeyRef<K> {
+    k: *const K,
+}
 
 struct LruEntry<K, V> {
     next: *mut LruEntry<K, V>,
@@ -22,8 +24,8 @@ pub struct LruCache<K, V> {
     head: *mut LruEntry<K, V>,
 }
 
-unsafe impl<K: Send, V: Send> Send for LruCache<K, V> { }
-unsafe impl<K: Sync, V: Sync> Sync for LruCache<K, V> { }
+unsafe impl<K: Send, V: Send> Send for LruCache<K, V> {}
+unsafe impl<K: Sync, V: Sync> Sync for LruCache<K, V> {}
 
 impl<K: Hash> Hash for KeyRef<K> {
     fn hash<S: Hasher>(&self, state: &mut S) {
@@ -33,7 +35,7 @@ impl<K: Hash> Hash for KeyRef<K> {
 
 impl<K: PartialEq> PartialEq for KeyRef<K> {
     fn eq(&self, other: &KeyRef<K>) -> bool {
-        unsafe{ (*self.k).eq(&*other.k) }
+        unsafe { (*self.k).eq(&*other.k) }
     }
 }
 
@@ -56,14 +58,19 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     /// # Example
     ///
     /// ```
-    /// use queen_io::plus::lru_cache::LruCache;
+    /// use queen_io::cache::lru_cache::LruCache;
     /// let mut cache: LruCache<i32, &str> = LruCache::new(10);
     /// ```
     pub fn new(capacity: usize) -> LruCache<K, V> {
+        let head = mem::MaybeUninit::<LruEntry<K, V>>::uninit();
         let cache = LruCache {
             map: HashMap::new(),
             max_size: capacity,
-            head: unsafe{ mem::transmute(Box::new(mem::MaybeUninit::<LruEntry<K, V>>::uninit().assume_init())) },
+            head: unsafe {
+                mem::transmute::<std::boxed::Box<LruEntry<K, V>>, *mut LruEntry<K, V>>(Box::new(
+                    head.assume_init(),
+                ))
+            },
         };
         unsafe {
             (*cache.head).next = cache.head;
@@ -77,7 +84,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     /// # Example
     ///
     /// ```
-    /// use queen_io::plus::lru_cache::LruCache;
+    /// use queen_io::cache::lru_cache::LruCache;
     /// let mut cache = LruCache::new(2);
     ///
     /// cache.put(1, "a");
@@ -86,7 +93,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     /// assert_eq!(cache.get(&2), Some(&"b"));
     /// ```
     pub fn put(&mut self, k: K, v: V) {
-        let (node_ptr, node_opt) = match self.map.get_mut(&KeyRef{k: &k}) {
+        let (node_ptr, node_opt) = match self.map.get_mut(&KeyRef { k: &k }) {
             Some(node) => {
                 node.value = v;
                 let node_ptr: *mut LruEntry<K, V> = &mut **node;
@@ -108,7 +115,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
                 let keyref = unsafe { &(*node_ptr).key };
 
                 //self.map.swap(KeyRef{k: keyref}, node);
-                self.map.insert(KeyRef{k: keyref}, node);
+                self.map.insert(KeyRef { k: keyref }, node);
                 self.attach(node_ptr);
                 if self.len() > self.capacity() {
                     self.remove_lru();
@@ -122,7 +129,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     /// # Example
     ///
     /// ```
-    /// use queen_io::plus::lru_cache::LruCache;
+    /// use queen_io::cache::lru_cache::LruCache;
     /// let mut cache = LruCache::new(2);
     ///
     /// cache.put(1, "a");
@@ -134,7 +141,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     /// assert_eq!(cache.get(&2), Some(&"c"));
     /// ```
     pub fn get<'a>(&'a mut self, k: &K) -> Option<&'a V> {
-        let (value, node_ptr_opt) = match self.map.get_mut(&KeyRef{k}) {
+        let (value, node_ptr_opt) = match self.map.get_mut(&KeyRef { k }) {
             None => (None, None),
             Some(node) => {
                 let node_ptr: *mut LruEntry<K, V> = &mut **node;
@@ -156,7 +163,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     /// # Example
     ///
     /// ```
-    /// use queen_io::plus::lru_cache::LruCache;
+    /// use queen_io::cache::lru_cache::LruCache;
     /// let mut cache = LruCache::new(2);
     ///
     /// cache.put(2, "a");
@@ -167,10 +174,9 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     /// assert_eq!(cache.len(), 0);
     /// ```
     pub fn pop(&mut self, k: &K) -> Option<V> {
-        match self.map.remove(&KeyRef{k}) {
-            None => None,
-            Some(lru_entry) => Some(lru_entry.value)
-        }
+        self.map
+            .remove(&KeyRef { k })
+            .map(|lru_entry| lru_entry.value)
     }
 
     /// Return the maximum number of key-value pairs the cache can hold.
@@ -178,7 +184,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     /// # Example
     ///
     /// ```
-    /// use queen_io::plus::lru_cache::LruCache;
+    /// use queen_io::cache::lru_cache::LruCache;
     /// let mut cache: LruCache<i32, &str> = LruCache::new(2);
     /// assert_eq!(cache.capacity(), 2);
     /// ```
@@ -192,7 +198,7 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     /// # Example
     ///
     /// ```
-    /// use queen_io::plus::lru_cache::LruCache;
+    /// use queen_io::cache::lru_cache::LruCache;
     /// let mut cache = LruCache::new(2);
     ///
     /// cache.put(1, "a");
@@ -239,7 +245,9 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
         if !self.is_empty() {
             let lru = unsafe { (*self.head).prev };
             self.detach(lru);
-            self.map.remove(&KeyRef{k: unsafe { &(*lru).key }});
+            self.map.remove(&KeyRef {
+                k: unsafe { &(*lru).key },
+            });
         }
     }
 
@@ -262,14 +270,16 @@ impl<K: Hash + Eq, V> LruCache<K, V> {
     }
 }
 
-impl<A: fmt::Debug+ Hash + Eq, B: fmt::Debug> fmt::Debug for LruCache<A, B> {
+impl<A: fmt::Debug + Hash + Eq, B: fmt::Debug> fmt::Debug for LruCache<A, B> {
     /// Return a string that lists the key-value pairs from most-recently
     /// used to least-recently used.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{{")?;
         let mut cur = self.head;
         for i in 0..self.len() {
-            if i > 0 { write!(f, ", ")? }
+            if i > 0 {
+                write!(f, ", ")?
+            }
             unsafe {
                 cur = (*cur).next;
                 write!(f, "{:?}", (*cur).key)?;
@@ -283,14 +293,16 @@ impl<A: fmt::Debug+ Hash + Eq, B: fmt::Debug> fmt::Debug for LruCache<A, B> {
     }
 }
 
-impl<A: fmt::Display+ Hash + Eq, B: fmt::Display> fmt::Display for LruCache<A, B> {
+impl<A: fmt::Display + Hash + Eq, B: fmt::Display> fmt::Display for LruCache<A, B> {
     /// Return a string that lists the key-value pairs from most-recently
     /// used to least-recently used.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{{")?;
         let mut cur = self.head;
         for i in 0..self.len() {
-            if i > 0 { write!(f, ", ")? }
+            if i > 0 {
+                write!(f, ", ")?
+            }
             unsafe {
                 cur = (*cur).next;
                 write!(f, "{}", (*cur).key)?;
@@ -309,7 +321,9 @@ impl<K, V> Drop for LruCache<K, V> {
         unsafe {
             // Prevent compiler from trying to drop the un-initialized field in the sigil node.
             let node: Box<LruEntry<K, V>> = mem::transmute(self.head);
-            let LruEntry { key: k, value: v, .. } = *node;
+            let LruEntry {
+                key: k, value: v, ..
+            } = *node;
             mem::forget(k);
             mem::forget(v);
         }

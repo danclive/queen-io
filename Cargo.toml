@@ -20,6 +20,9 @@ edition = "2021"
 
 [dependencies]
 libc             = "0.2"
-indexmap         = "1.8"
+indexmap         = "2.5"
 slab             = "0.4"
-concurrent-queue = "1.2"
+concurrent-queue = "2.5"
+
+[features]
+stats = []

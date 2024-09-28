@@ -1,10 +1,10 @@
-use std::io::{Read, Write};
-use std::time::Duration;
-use std::net::{self, ToSocketAddrs, SocketAddr};
-use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
 use std::io;
+use std::io::{Read, Write};
+use std::net::{self, SocketAddr, ToSocketAddrs};
+use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
+use std::time::Duration;
 
-use crate::epoll::{SelectorId, Ready, Source, Epoll, Token, EpollOpt};
+use crate::epoll::{Epoll, EpollOpt, Ready, SelectorId, Source, Token};
 
 #[derive(Debug)]
 pub struct TcpStream {
@@ -15,20 +15,20 @@ pub struct TcpStream {
 #[derive(Debug)]
 pub struct TcpListener {
     inner: net::TcpListener,
-    selector_id: SelectorId
+    selector_id: SelectorId,
 }
 
 impl TcpStream {
     pub fn connect<A: ToSocketAddrs>(addr: A) -> io::Result<TcpStream> {
         let stream = net::TcpStream::connect(addr)?;
 
-        Ok(TcpStream::new(stream)?)
+        TcpStream::new(stream)
     }
 
     pub fn connect_timeout(addr: &SocketAddr, timeout: Duration) -> io::Result<TcpStream> {
         let stream = net::TcpStream::connect_timeout(addr, timeout)?;
 
-        Ok(TcpStream::new(stream)?)
+        TcpStream::new(stream)
     }
 
     pub fn new(stream: net::TcpStream) -> io::Result<TcpStream> {
@@ -36,14 +36,14 @@ impl TcpStream {
 
         Ok(TcpStream {
             inner: stream,
-            selector_id: SelectorId::new()
+            selector_id: SelectorId::new(),
         })
     }
 
     pub fn from_stream(stream: net::TcpStream) -> TcpStream {
         TcpStream {
             inner: stream,
-            selector_id: SelectorId::new()
+            selector_id: SelectorId::new(),
         }
     }
 
@@ -56,11 +56,9 @@ impl TcpStream {
     }
 
     pub fn try_clone(&self) -> io::Result<TcpStream> {
-        self.inner.try_clone().map(|s| {
-            TcpStream {
-                inner: s,
-                selector_id: self.selector_id.clone()
-            }
+        self.inner.try_clone().map(|s| TcpStream {
+            inner: s,
+            selector_id: self.selector_id.clone(),
         })
     }
 
@@ -151,7 +149,13 @@ impl Source for TcpStream {
         epoll.add(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+    fn modify(
+        &self,
+        epoll: &Epoll,
+        token: Token,
+        interest: Ready,
+        opts: EpollOpt,
+    ) -> io::Result<()> {
         epoll.modify(&self.as_raw_fd(), token, interest, opts)
     }
 
@@ -185,7 +189,7 @@ impl TcpListener {
     pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<TcpListener> {
         let listener = net::TcpListener::bind(addr)?;
 
-        Ok(TcpListener::new(listener)?)
+        TcpListener::new(listener)
     }
 
     pub fn new(sock: net::TcpListener) -> io::Result<TcpListener> {
@@ -202,18 +206,16 @@ impl TcpListener {
     }
 
     pub fn try_clone(&self) -> io::Result<TcpListener> {
-        self.inner.try_clone().map(|s| {
-            TcpListener {
-                inner: s,
-                selector_id: self.selector_id.clone(),
-            }
+        self.inner.try_clone().map(|s| TcpListener {
+            inner: s,
+            selector_id: self.selector_id.clone(),
         })
     }
 
     pub fn accept(&self) -> io::Result<(TcpStream, SocketAddr)> {
-        self.inner.accept().and_then(|(s, a)| {
-            Ok((TcpStream::new(s)?, a))
-        })
+        self.inner
+            .accept()
+            .and_then(|(s, a)| Ok((TcpStream::new(s)?, a)))
     }
 
     pub fn set_ttl(&self, ttl: u32) -> io::Result<()> {
@@ -235,7 +237,13 @@ impl Source for TcpListener {
         epoll.add(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+    fn modify(
+        &self,
+        epoll: &Epoll,
+        token: Token,
+        interest: Ready,
+        opts: EpollOpt,
+    ) -> io::Result<()> {
         epoll.modify(&self.as_raw_fd(), token, interest, opts)
     }
 
@@ -248,7 +256,7 @@ impl FromRawFd for TcpListener {
     unsafe fn from_raw_fd(fd: RawFd) -> TcpListener {
         TcpListener {
             inner: net::TcpListener::from_raw_fd(fd),
-            selector_id: SelectorId::new()
+            selector_id: SelectorId::new(),
         }
     }
 }

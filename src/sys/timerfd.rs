@@ -1,11 +1,11 @@
-use std::os::unix::io::{RawFd, AsRawFd, FromRawFd, IntoRawFd};
-use std::time::Duration;
-use std::mem;
-use std::io::{self, Read};
 use std::convert::TryInto;
 use std::fmt;
+use std::io::{self, Read};
+use std::mem;
+use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
+use std::time::Duration;
 
-use crate::epoll::{Epoll, Token, Ready, EpollOpt, Source};
+use crate::epoll::{Epoll, EpollOpt, Ready, Source, Token};
 
 use super::fd::FileDesc;
 
@@ -16,30 +16,30 @@ pub enum Clock {
     Monotonic = libc::CLOCK_MONOTONIC,
     Boottime = libc::CLOCK_BOOTTIME,
     RealtimeAlarm = libc::CLOCK_REALTIME_ALARM,
-    BoottimeAlarm = libc::CLOCK_BOOTTIME_ALARM
+    BoottimeAlarm = libc::CLOCK_BOOTTIME_ALARM,
 }
 
 impl Clock {
     pub fn clock_name(&self) -> &'static str {
         match self {
-            Clock::Realtime       => "CLOCK_REALTIME",
-            Clock::RealtimeAlarm  => "CLOCK_REALTIME_ALARM",
-            Clock::Monotonic      => "CLOCK_MONOTONIC",
-            Clock::Boottime       => "CLOCK_BOOTTIME",
-            Clock::BoottimeAlarm  => "CLOCK_BOOTTIME_ALARM",
+            Clock::Realtime => "CLOCK_REALTIME",
+            Clock::RealtimeAlarm => "CLOCK_REALTIME_ALARM",
+            Clock::Monotonic => "CLOCK_MONOTONIC",
+            Clock::Boottime => "CLOCK_BOOTTIME",
+            Clock::BoottimeAlarm => "CLOCK_BOOTTIME_ALARM",
         }
     }
 }
 
 impl fmt::Display for Clock {
-    fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.clock_name())
     }
 }
 
 impl fmt::Debug for Clock {
-    fn fmt (&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} ({})", self.clone() as i32, self.clock_name())
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} ({})", *self as i32, self.clock_name())
     }
 }
 
@@ -74,13 +74,13 @@ const TFD_TIMER_CANCEL_ON_SET: i32 = 0o0000002;
 
 #[derive(Debug)]
 pub struct TimerFd {
-    inner: FileDesc
+    inner: FileDesc,
 }
 
 #[derive(Debug, Clone)]
 pub struct TimerSpec {
     pub interval: Duration,
-    pub value: Duration
+    pub value: Duration,
 }
 
 impl TimerFd {
@@ -114,7 +114,7 @@ impl TimerFd {
     pub fn create(clock: Clock, flags: i32) -> io::Result<TimerFd> {
         let timerfd = syscall!(timerfd_create(clock as i32, flags))?;
         Ok(TimerFd {
-            inner: unsafe { FileDesc::new(timerfd) }
+            inner: unsafe { FileDesc::new(timerfd) },
         })
     }
 
@@ -138,7 +138,7 @@ impl TimerFd {
     pub fn settime(&self, value: TimerSpec, flags: SetTimeFlags) -> io::Result<TimerSpec> {
         let new_value = libc::itimerspec {
             it_interval: duration_to_timespec(value.interval),
-            it_value: duration_to_timespec(value.value)
+            it_value: duration_to_timespec(value.value),
         };
 
         let mut old_value: libc::itimerspec = unsafe { mem::zeroed() };
@@ -158,7 +158,7 @@ impl TimerFd {
 
         Ok(TimerSpec {
             interval: timespec_to_duration(old_value.it_interval),
-            value: timespec_to_duration(old_value.it_value)
+            value: timespec_to_duration(old_value.it_value),
         })
     }
 
@@ -184,14 +184,11 @@ impl TimerFd {
     pub fn gettime(&self) -> io::Result<TimerSpec> {
         let mut itimerspec: libc::itimerspec = unsafe { mem::zeroed() };
 
-        syscall!(timerfd_gettime(
-            self.inner.as_raw_fd(),
-            &mut itimerspec
-        ))?;
+        syscall!(timerfd_gettime(self.inner.as_raw_fd(), &mut itimerspec))?;
 
         Ok(TimerSpec {
             interval: timespec_to_duration(itimerspec.it_interval),
-            value: timespec_to_duration(itimerspec.it_value)
+            value: timespec_to_duration(itimerspec.it_value),
         })
     }
 
@@ -212,7 +209,7 @@ impl TimerFd {
 fn duration_to_timespec(duration: Duration) -> libc::timespec {
     libc::timespec {
         tv_sec: duration.as_secs().try_into().unwrap(),
-        tv_nsec: duration.subsec_nanos().try_into().unwrap()
+        tv_nsec: duration.subsec_nanos().into(),
     }
 }
 
@@ -223,7 +220,7 @@ fn timespec_to_duration(timespec: libc::timespec) -> Duration {
 impl FromRawFd for TimerFd {
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
         TimerFd {
-            inner: FileDesc::new(fd)
+            inner: FileDesc::new(fd),
         }
     }
 }
@@ -245,7 +242,13 @@ impl Source for TimerFd {
         epoll.add(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+    fn modify(
+        &self,
+        epoll: &Epoll,
+        token: Token,
+        interest: Ready,
+        opts: EpollOpt,
+    ) -> io::Result<()> {
         epoll.modify(&self.as_raw_fd(), token, interest, opts)
     }
 

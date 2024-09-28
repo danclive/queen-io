@@ -1,15 +1,15 @@
 use std::borrow::Borrow;
 use std::collections::hash_map::RandomState;
+use std::fmt;
 use std::hash::{BuildHasher, Hash};
 #[cfg(feature = "stats")]
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
-use std::fmt;
 
-use indexmap::map::{self, IndexMap};
 use indexmap::map::Entry as IndexMapEntry;
 use indexmap::map::OccupiedEntry as OccupiedIndexMapEntry;
 use indexmap::map::VacantEntry as VacantIndexMapEntry;
+use indexmap::map::{self, IndexMap};
 
 /// A view into a single location in a map, which may be vacant or occupied.
 pub enum Entry<'a, K: 'a, V: 'a> {
@@ -22,16 +22,8 @@ pub enum Entry<'a, K: 'a, V: 'a> {
 impl<'a, K: 'a + fmt::Debug, V: 'a + fmt::Debug> fmt::Debug for Entry<'a, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Entry::Vacant(ref v) => {
-                f.debug_tuple("Entry")
-                    .field(v)
-                    .finish()
-            }
-            Entry::Occupied(ref o) => {
-                f.debug_tuple("Entry")
-                    .field(o)
-                    .finish()
-            }
+            Entry::Vacant(ref v) => f.debug_tuple("Entry").field(v).finish(),
+            Entry::Occupied(ref o) => f.debug_tuple("Entry").field(o).finish(),
         }
     }
 }
@@ -47,7 +39,7 @@ impl<'a, K: Hash + Eq, V> Entry<'a, K, V> {
 
 /// A view into a single occupied location in the cache that was unexpired at the moment of lookup.
 pub struct OccupiedEntry<'a, K: 'a, V: 'a> {
-    entry: OccupiedIndexMapEntry<'a, K, InternalEntry<V>>
+    entry: OccupiedIndexMapEntry<'a, K, InternalEntry<V>>,
 }
 
 impl<'a, K, V> OccupiedEntry<'a, K, V> {
@@ -57,7 +49,7 @@ impl<'a, K, V> OccupiedEntry<'a, K, V> {
     ///
     /// ```
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut map = TtlCache::new(10);
     ///
@@ -88,15 +80,15 @@ impl<'a, K, V> OccupiedEntry<'a, K, V> {
 impl<'a, K: 'a + fmt::Debug, V: 'a + fmt::Debug> fmt::Debug for OccupiedEntry<'a, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("OccupiedEntry")
-            .field("key", self.key())
-            .field("value", self.get())
+            .field("key", &self.key())
+            .field("value", &self.get())
             .finish()
     }
 }
 
 /// A view into a single empty location in the cache
 pub struct VacantEntry<'a, K: 'a, V: 'a> {
-    entry: VacantIndexMapEntry<'a, K, InternalEntry<V>>
+    entry: VacantIndexMapEntry<'a, K, InternalEntry<V>>,
 }
 
 impl<'a, K, V: 'a> VacantEntry<'a, K, V> {
@@ -105,7 +97,7 @@ impl<'a, K, V: 'a> VacantEntry<'a, K, V> {
     /// # Examples
     ///
     /// ```
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut map = TtlCache::<String, u32>::new(10);
     ///
@@ -123,12 +115,9 @@ impl<'a, K, V: 'a> VacantEntry<'a, K, V> {
     }
 }
 
-
 impl<'a, K: 'a + fmt::Debug, V: 'a> fmt::Debug for VacantEntry<'a, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_tuple("VacantEntry")
-            .field(self.key())
-            .finish()
+        f.debug_tuple("VacantEntry").field(&self.key()).finish()
     }
 }
 
@@ -179,7 +168,7 @@ impl<K: Eq + Hash, V> TtlCache<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache: TtlCache<i32, &str> = TtlCache::new(10);
     /// ```
@@ -218,16 +207,16 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     /// # Examples
     /// ```
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache = TtlCache::new(10);
     /// cache.insert(1, "a", Duration::from_secs(30));
     /// assert_eq!(cache.contains_key(&1), true);
     /// ```
-    pub fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
+    pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: ?Sized + Hash + Eq,
     {
         // Expiration check is handled by get
         self.get(key).is_some()
@@ -240,7 +229,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     ///
     /// ```
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache = TtlCache::new(2);
     ///
@@ -266,7 +255,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     ///
     /// ```
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache = TtlCache::new(2);
     /// let duration = Duration::from_secs(30);
@@ -279,12 +268,13 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     /// assert_eq!(cache.get(&1), None);
     /// assert_eq!(cache.get(&2), Some(&"c"));
     /// ```
-    pub fn get<Q: ?Sized>(&self, k: &Q) -> Option<&V>
+    pub fn get<Q>(&self, k: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: ?Sized + Hash + Eq,
     {
-        let to_ret = self.map
+        let to_ret = self
+            .map
             .get(k)
             .and_then(|x| if x.is_expired() { None } else { Some(&x.value) });
         #[cfg(feature = "stats")]
@@ -305,7 +295,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     ///
     /// ```
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache = TtlCache::new(2);
     /// let duration = Duration::from_secs(30);
@@ -318,10 +308,10 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     /// assert_eq!(cache.get_mut(&1), None);
     /// assert_eq!(cache.get_mut(&2), Some(&mut "c"));
     /// ```
-    pub fn get_mut<Q: ?Sized>(&mut self, k: &Q) -> Option<&mut V>
+    pub fn get_mut<Q>(&mut self, k: &Q) -> Option<&mut V>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: ?Sized + Hash + Eq,
     {
         let to_ret = self.map.get_mut(k).and_then(|x| {
             if x.is_expired() {
@@ -347,7 +337,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     ///
     /// ```
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache = TtlCache::new(2);
     ///
@@ -357,10 +347,10 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     /// assert_eq!(cache.remove(&2), Some("a"));
     /// assert_eq!(cache.remove(&2), None);
     /// ```
-    pub fn remove<Q: ?Sized>(&mut self, k: &Q) -> Option<V>
+    pub fn remove<Q>(&mut self, k: &Q) -> Option<V>
     where
         K: Borrow<Q>,
-        Q: Hash + Eq,
+        Q: ?Sized + Hash + Eq,
     {
         self.map
             .shift_remove(k)
@@ -373,7 +363,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     ///
     /// ```
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache: TtlCache<i32, &str> = TtlCache::new(2);
     /// assert_eq!(cache.capacity(), 2);
@@ -389,7 +379,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     ///
     /// ```
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache = TtlCache::new(2);
     /// let duration = Duration::from_secs(30);
@@ -428,23 +418,18 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
         self.map.clear();
     }
 
-
     pub fn entry(&mut self, k: K) -> Entry<K, V> {
-        let should_remove = self.map.get(&k).map(|value| value.is_expired()).unwrap_or(false);
+        let should_remove = self
+            .map
+            .get(&k)
+            .map(|value| value.is_expired())
+            .unwrap_or(false);
         if should_remove {
             self.map.shift_remove(&k);
         }
-        match self.map.entry(k){
-            IndexMapEntry::Occupied(entry) => {
-                Entry::Occupied(OccupiedEntry {
-                    entry
-                })
-            }
-            IndexMapEntry::Vacant(entry) => {
-                Entry::Vacant(VacantEntry{
-                    entry
-                })
-            }
+        match self.map.entry(k) {
+            IndexMapEntry::Occupied(entry) => Entry::Occupied(OccupiedEntry { entry }),
+            IndexMapEntry::Vacant(entry) => Entry::Vacant(VacantEntry { entry }),
         }
     }
 
@@ -454,7 +439,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     ///
     /// ```
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache = TtlCache::new(2);
     /// let duration = Duration::from_secs(30);
@@ -479,7 +464,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     ///
     /// ```
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache = TtlCache::new(2);
     /// let duration = Duration::from_secs(30);
@@ -513,7 +498,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     /// ```
     /// use std::thread::sleep;
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache = TtlCache::new(2);
     ///
@@ -539,7 +524,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     /// ```
     /// use std::thread::sleep;
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache = TtlCache::new(2);
     ///
@@ -562,7 +547,7 @@ impl<K: Eq + Hash, V, S: BuildHasher> TtlCache<K, V, S> {
     /// ```
     /// use std::thread::sleep;
     /// use std::time::Duration;
-    /// use queen_io::plus::ttl_cache::TtlCache;
+    /// use queen_io::cache::ttl_cache::TtlCache;
     ///
     /// let mut cache = TtlCache::new(2);
     ///

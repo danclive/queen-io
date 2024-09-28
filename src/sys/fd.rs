@@ -1,12 +1,15 @@
-use std::io::{self, Read, Write, Seek, SeekFrom};
 use std::fs::File;
-use std::os::unix::io::{FromRawFd, AsRawFd, IntoRawFd, RawFd};
+use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::os::unix::fs::FileExt;
+use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
 #[derive(Debug)]
 pub struct FileDesc(File);
 
 impl FileDesc {
+    /// Create a new `FileDesc` from the given `RawFd`.
+    /// # Safety
+    /// This function is unsafe because it operates on a raw file descriptor.
     pub unsafe fn new(fd: RawFd) -> Self {
         FileDesc(File::from_raw_fd(fd))
     }

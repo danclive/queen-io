@@ -1,30 +1,30 @@
-use std::path::Path;
-use std::io::{Read, Write};
-use std::time::Duration;
-use std::net::Shutdown;
-use std::os::unix::net::{self, SocketAddr};
-use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
 use std::io;
+use std::io::{Read, Write};
+use std::net::Shutdown;
+use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
+use std::os::unix::net::{self, SocketAddr};
+use std::path::Path;
+use std::time::Duration;
 
-use crate::epoll::{SelectorId, Ready, Source, Epoll, Token, EpollOpt};
+use crate::epoll::{Epoll, EpollOpt, Ready, SelectorId, Source, Token};
 
 #[derive(Debug)]
 pub struct UnixStream {
     inner: net::UnixStream,
-    selector_id: SelectorId
+    selector_id: SelectorId,
 }
 
 #[derive(Debug)]
 pub struct UnixListener {
     inner: net::UnixListener,
-    selector_id: SelectorId
+    selector_id: SelectorId,
 }
 
 impl UnixStream {
     pub fn connect<P: AsRef<Path>>(path: P) -> io::Result<UnixStream> {
         let stream = net::UnixStream::connect(path)?;
 
-        Ok(UnixStream::new(stream)?)
+        UnixStream::new(stream)
     }
 
     pub fn new(stream: net::UnixStream) -> io::Result<UnixStream> {
@@ -32,7 +32,7 @@ impl UnixStream {
 
         Ok(UnixStream {
             inner: stream,
-            selector_id: SelectorId::new()
+            selector_id: SelectorId::new(),
         })
     }
 
@@ -43,11 +43,9 @@ impl UnixStream {
     }
 
     pub fn try_clone(&self) -> io::Result<UnixStream> {
-        self.inner.try_clone().map(|s| {
-            UnixStream {
-                inner: s,
-                selector_id: self.selector_id.clone()
-            }
+        self.inner.try_clone().map(|s| UnixStream {
+            inner: s,
+            selector_id: self.selector_id.clone(),
         })
     }
 
@@ -126,7 +124,13 @@ impl Source for UnixStream {
         epoll.add(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+    fn modify(
+        &self,
+        epoll: &Epoll,
+        token: Token,
+        interest: Ready,
+        opts: EpollOpt,
+    ) -> io::Result<()> {
         epoll.modify(&self.as_raw_fd(), token, interest, opts)
     }
 
@@ -160,7 +164,7 @@ impl UnixListener {
     pub fn bind<P: AsRef<Path>>(path: P) -> io::Result<UnixListener> {
         let listener = net::UnixListener::bind(path)?;
 
-        Ok(UnixListener::new(listener)?)
+        UnixListener::new(listener)
     }
 
     pub fn new(sock: net::UnixListener) -> io::Result<UnixListener> {
@@ -168,22 +172,20 @@ impl UnixListener {
 
         Ok(UnixListener {
             inner: sock,
-            selector_id: SelectorId::new()
+            selector_id: SelectorId::new(),
         })
     }
 
     pub fn accept(&self) -> io::Result<(UnixStream, SocketAddr)> {
-        self.inner.accept().and_then(|(s, a)| {
-            Ok((UnixStream::new(s)?, a))
-        })
+        self.inner
+            .accept()
+            .and_then(|(s, a)| Ok((UnixStream::new(s)?, a)))
     }
 
     pub fn try_clone(&self) -> io::Result<UnixListener> {
-        self.inner.try_clone().map(|s| {
-            UnixListener {
-                inner: s,
-                selector_id: self.selector_id.clone()
-            }
+        self.inner.try_clone().map(|s| UnixListener {
+            inner: s,
+            selector_id: self.selector_id.clone(),
         })
     }
 
@@ -206,7 +208,13 @@ impl Source for UnixListener {
         epoll.add(&self.as_raw_fd(), token, interest, opts)
     }
 
-    fn modify(&self, epoll: &Epoll, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()> {
+    fn modify(
+        &self,
+        epoll: &Epoll,
+        token: Token,
+        interest: Ready,
+        opts: EpollOpt,
+    ) -> io::Result<()> {
         epoll.modify(&self.as_raw_fd(), token, interest, opts)
     }
 
@@ -219,7 +227,7 @@ impl FromRawFd for UnixListener {
     unsafe fn from_raw_fd(fd: RawFd) -> UnixListener {
         UnixListener {
             inner: net::UnixListener::from_raw_fd(fd),
-            selector_id: SelectorId::new()
+            selector_id: SelectorId::new(),
         }
     }
 }

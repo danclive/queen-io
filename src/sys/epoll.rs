@@ -2,21 +2,20 @@ use std::os::unix::io::AsRawFd;
 use std::os::unix::io::RawFd;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
-use std::{cmp, i32, u64};
-use std::io;
+use std::{cmp, io};
 
 use libc::{self, c_int};
 use libc::{EPOLLERR, EPOLLHUP};
-use libc::{EPOLLET, EPOLLOUT, EPOLLIN, EPOLLPRI};
-use libc::{EPOLLRDHUP, EPOLLONESHOT};
+use libc::{EPOLLET, EPOLLIN, EPOLLOUT, EPOLLPRI};
+use libc::{EPOLLONESHOT, EPOLLRDHUP};
 
-use crate::epoll::{Token, Ready, EpollOpt, Event};
+use crate::epoll::{EpollOpt, Event, Ready, Token};
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 
 pub struct Epoll {
     id: usize,
-    epfd: RawFd
+    epfd: RawFd,
 }
 
 impl Epoll {
@@ -25,10 +24,7 @@ impl Epoll {
 
         let id = NEXT_ID.fetch_add(1, Ordering::Relaxed) + 1;
 
-        Ok(Epoll {
-            id,
-            epfd
-        })
+        Ok(Epoll { id, epfd })
     }
 
     pub fn id(&self) -> usize {
@@ -37,7 +33,7 @@ impl Epoll {
 
     pub fn wait(&self, evts: &mut Events, timeout: Option<Duration>) -> io::Result<()> {
         let timeout = timeout
-            .map(|to| cmp::min(to.as_millis(), libc::c_int::max_value() as u128) as libc::c_int)
+            .map(|to| cmp::min(to.as_millis(), libc::c_int::MAX as u128) as libc::c_int)
             .unwrap_or(-1);
 
         let cnt = syscall!(epoll_wait(
@@ -55,7 +51,7 @@ impl Epoll {
     pub fn add(&self, fd: RawFd, token: Token, interests: Ready, opts: EpollOpt) -> io::Result<()> {
         let mut info = libc::epoll_event {
             events: ioevent_to_epoll(interests, opts),
-            u64: usize::from(token) as u64
+            u64: usize::from(token) as u64,
         };
 
         syscall!(epoll_ctl(self.epfd, libc::EPOLL_CTL_ADD, fd, &mut info))?;
@@ -63,10 +59,16 @@ impl Epoll {
         Ok(())
     }
 
-    pub fn modify(&self, fd: RawFd, token: Token, interests: Ready, opts: EpollOpt) -> io::Result<()> {
+    pub fn modify(
+        &self,
+        fd: RawFd,
+        token: Token,
+        interests: Ready,
+        opts: EpollOpt,
+    ) -> io::Result<()> {
         let mut info = libc::epoll_event {
             events: ioevent_to_epoll(interests, opts),
-            u64: usize::from(token) as u64
+            u64: usize::from(token) as u64,
         };
 
         syscall!(epoll_ctl(self.epfd, libc::EPOLL_CTL_MOD, fd, &mut info))?;
@@ -75,10 +77,7 @@ impl Epoll {
     }
 
     pub fn delete(&self, fd: RawFd) -> io::Result<()> {
-        let mut info = libc::epoll_event {
-            events: 0,
-            u64: 0,
-        };
+        let mut info = libc::epoll_event { events: 0, u64: 0 };
 
         syscall!(epoll_ctl(self.epfd, libc::EPOLL_CTL_DEL, fd, &mut info))?;
 
@@ -137,7 +136,7 @@ pub struct Events {
 impl Events {
     pub fn with_capacity(u: usize) -> Events {
         Events {
-            events: Vec::with_capacity(u)
+            events: Vec::with_capacity(u),
         }
     }
 

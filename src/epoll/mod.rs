@@ -1,21 +1,21 @@
-use std::time::Duration;
 use std::fmt;
+use std::io;
 use std::os::unix::io::{AsRawFd, RawFd};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::io;
+use std::time::Duration;
 
 use crate::sys;
 
 pub use epoll_opt::EpollOpt;
-pub use event::{Event, Events, Iter, IntoIter};
-pub use source::Source;
+pub use event::{Event, Events, IntoIter, Iter};
 pub use ready::Ready;
+pub use source::Source;
 pub use token::Token;
 
 mod epoll_opt;
 mod event;
-mod source;
 mod ready;
+mod source;
 mod token;
 
 pub struct Epoll(pub(crate) sys::Epoll);
@@ -33,8 +33,15 @@ impl Epoll {
         Ok(events.len())
     }
 
-    pub fn add<S>(&self, source: &S, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>
-        where S: Source + ?Sized
+    pub fn add<S>(
+        &self,
+        source: &S,
+        token: Token,
+        interest: Ready,
+        opts: EpollOpt,
+    ) -> io::Result<()>
+    where
+        S: Source + ?Sized,
     {
         validate_args(token, interest)?;
 
@@ -43,8 +50,15 @@ impl Epoll {
         Ok(())
     }
 
-    pub fn modify<S>(&self, source: &S, token: Token, interest: Ready, opts: EpollOpt) -> io::Result<()>
-        where S: Source + ?Sized
+    pub fn modify<S>(
+        &self,
+        source: &S,
+        token: Token,
+        interest: Ready,
+        opts: EpollOpt,
+    ) -> io::Result<()>
+    where
+        S: Source + ?Sized,
     {
         validate_args(token, interest)?;
 
@@ -54,7 +68,8 @@ impl Epoll {
     }
 
     pub fn delete<S>(&self, source: &S) -> io::Result<()>
-        where S: Source + ?Sized
+    where
+        S: Source + ?Sized,
     {
         source.delete(self)?;
 
@@ -76,7 +91,10 @@ impl fmt::Debug for Epoll {
 
 fn validate_args(_token: Token, interest: Ready) -> io::Result<()> {
     if !interest.is_readable() && !interest.is_writable() {
-        return Err(io::Error::new(io::ErrorKind::Other, "interest must include readable or writable"));
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            "interest must include readable or writable",
+        ));
     }
 
     Ok(())
@@ -85,7 +103,7 @@ fn validate_args(_token: Token, interest: Ready) -> io::Result<()> {
 fn is_send<T: Send>() {}
 fn is_sync<T: Sync>() {}
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SelectorId {
     id: AtomicUsize,
 }
